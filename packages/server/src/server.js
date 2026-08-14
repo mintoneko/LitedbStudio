@@ -125,6 +125,17 @@ export class LiteDBServer {
 
     // Query documents
     this.router.post('/api/collections/:name/query', this._requireRole('read-only'), (req, res) => {
+      if (!this.engine.hasCollection(req.params.name)) {
+        const { page, pageSize } = req.body || {};
+        if (page !== undefined || pageSize !== undefined) {
+          return this._sendJson(res, 200, {
+            success: true,
+            data: { items: [], total: 0, page: Number(page) || 1, pageSize: Number(pageSize) || 15, totalPages: 0 }
+          });
+        }
+        return this._sendJson(res, 200, { success: true, data: [], count: 0 });
+      }
+
       const col = this.engine.collection(req.params.name);
       const { filter = {}, sort, limit, skip, select, page, pageSize } = req.body || {};
 
@@ -139,6 +150,9 @@ export class LiteDBServer {
 
     // Count
     this.router.post('/api/collections/:name/count', this._requireRole('read-only'), (req, res) => {
+      if (!this.engine.hasCollection(req.params.name)) {
+        return this._sendJson(res, 200, { success: true, data: { count: 0 } });
+      }
       const col = this.engine.collection(req.params.name);
       const { filter = {} } = req.body || {};
       const count = col.count(filter);
@@ -147,6 +161,9 @@ export class LiteDBServer {
 
     // Find by ID
     this.router.get('/api/collections/:name/:id', this._requireRole('read-only'), (req, res) => {
+      if (!this.engine.hasCollection(req.params.name)) {
+        return this._sendError(res, 404, 'Collection not found');
+      }
       const col = this.engine.collection(req.params.name);
       const doc = col.findById(req.params.id);
       if (!doc) {
@@ -157,6 +174,9 @@ export class LiteDBServer {
 
     // Update by ID (Partial patch)
     this.router.put('/api/collections/:name/:id', this._requireRole('read-write'), (req, res) => {
+      if (!this.engine.hasCollection(req.params.name)) {
+        return this._sendError(res, 404, 'Collection not found');
+      }
       const col = this.engine.collection(req.params.name);
       const patch = req.body || {};
       const updated = col.updateById(req.params.id, patch);
@@ -168,6 +188,9 @@ export class LiteDBServer {
 
     // Update Many
     this.router.put('/api/collections/:name', this._requireRole('read-write'), (req, res) => {
+      if (!this.engine.hasCollection(req.params.name)) {
+        return this._sendJson(res, 200, { success: true, data: { updatedCount: 0 } });
+      }
       const col = this.engine.collection(req.params.name);
       const { filter, patch } = req.body || {};
       if (!filter || !patch) {
@@ -179,6 +202,9 @@ export class LiteDBServer {
 
     // Delete by ID
     this.router.delete('/api/collections/:name/:id', this._requireRole('read-write'), (req, res) => {
+      if (!this.engine.hasCollection(req.params.name)) {
+        return this._sendError(res, 404, 'Document not found');
+      }
       const col = this.engine.collection(req.params.name);
       const deleted = col.deleteById(req.params.id);
       if (!deleted) {
@@ -189,6 +215,9 @@ export class LiteDBServer {
 
     // Delete Many
     this.router.delete('/api/collections/:name', this._requireRole('read-write'), (req, res) => {
+      if (!this.engine.hasCollection(req.params.name)) {
+        return this._sendJson(res, 200, { success: true, data: { deletedCount: 0 } });
+      }
       const col = this.engine.collection(req.params.name);
       const { filter = {} } = req.body || {};
       const deletedCount = col.deleteMany(filter);
@@ -197,6 +226,9 @@ export class LiteDBServer {
 
     // Clear collection
     this.router.post('/api/collections/:name/clear', this._requireRole('admin'), (req, res) => {
+      if (!this.engine.hasCollection(req.params.name)) {
+        return this._sendJson(res, 200, { success: true, message: `Collection ${req.params.name} cleared` });
+      }
       const col = this.engine.collection(req.params.name);
       col.clear();
       this._sendJson(res, 200, { success: true, message: `Collection ${req.params.name} cleared` });

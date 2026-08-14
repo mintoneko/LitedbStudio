@@ -37,7 +37,7 @@
 
       <div class="stat-card">
         <div class="stat-header">
-          <span class="stat-title">常驻内存占用 (RSS)</span>
+          <span class="stat-title">常驻内存占用</span>
           <div class="stat-icon violet">
             <Activity :size="18" />
           </div>
@@ -198,5 +198,36 @@ const formatDate = (isoStr) => {
 .table-responsive {
   width: 100%;
   overflow-x: auto;
+}
+
+@media (max-width: 640px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .stat-card {
+    padding: 12px 14px;
+  }
+
+  .stat-value {
+    font-size: 1.4rem;
+    margin: 8px 0 4px;
+  }
+
+  .stat-title {
+    font-size: 0.75rem;
+  }
+
+  .stat-icon {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+@media (max-width: 380px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

@@ -8,14 +8,16 @@
           </div>
           <h3>新建数据集合</h3>
         </div>
-        <button class="btn-close" aria-label="关闭" @click="close">&times;</button>
+        <button class="btn-close" aria-label="关闭" @click="close">
+          <X :size="18" />
+        </button>
       </div>
 
       <form @submit.prevent="handleCreate">
         <div class="modal-body">
           <div class="form-group">
             <label for="collection-name-input">
-              集合名称 (Collection Name)
+              集合名称
               <span class="required-star">*</span>
             </label>
             <input
@@ -24,7 +26,7 @@
               v-model="collectionName"
               type="text"
               class="form-input"
-              placeholder="例如: users, orders, articles"
+              placeholder="输入集合名称"
               autocomplete="off"
               :disabled="submitting"
               @input="errorMessage = ''"
@@ -55,7 +57,7 @@
 
 <script setup>
 import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
-import { FolderPlus } from 'lucide-vue-next';
+import { FolderPlus, X } from 'lucide-vue-next';
 import { useLiteDB } from '../composables/useLiteDB.js';
 
 const emit = defineEmits(['created']);
@@ -239,16 +241,24 @@ onUnmounted(() => {
 
 .btn-close {
   background: transparent;
-  border: none;
-  color: var(--text-muted);
-  font-size: 1.5rem;
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  line-height: 1;
-  padding: 0 4px;
+  padding: 0;
+  transition: all 0.18s ease;
 }
 
 .btn-close:hover {
   color: var(--text-main);
+  background: var(--table-hover-bg);
+  border-color: var(--border-subtle);
+  transform: rotate(90deg);
 }
 
 .loading-spinner {

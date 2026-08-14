@@ -63,9 +63,9 @@ node bin/litedb.js start --port 3000 --db ./data/litedb.db --admin-key admin_lit
 
 ---
 
-## 📦 统一客户端 SDK (`@litedb/client`)
+## 📦 统一客户端 SDK (`@litedb/client`) 与各框架使用指南
 
-### 方式 A：远程 Web 前端模式（Vue / React / 原生 HTML）
+### 1. 基础 SDK 标准接入 (TypeScript / JavaScript)
 
 ```typescript
 import { LiteDB } from '@litedb/client';
@@ -80,7 +80,7 @@ const todos = db.collection('todos');
 
 // 2. 增删改查标准操作
 async function run() {
-  // 插入单条 (默认自动分配从 1 递增的数字 ID)
+  // ① 插入单条文档 (自动维护从 1 递增的数字 ID)
   const item = await todos.insert({
     title: '学习 LiteDB 规范',
     completed: false,
@@ -89,22 +89,34 @@ async function run() {
   });
   console.log('创建成功，ID:', item.id); // 输出: 1
 
-  // 条件查询与分页 (默认按 ID 升序排列)
+  // ② 批量插入
+  await todos.insertMany([
+    { title: '任务 A', completed: false },
+    { title: '任务 B', completed: true }
+  ]);
+
+  // ③ 高级条件查询与分页 (默认按 ID 升序排列)
   const pageResult = await todos.paginate({
     completed: false,
     priority: { $gte: 1 }
   }, {
     page: 1,
     pageSize: 10,
-    sort: { id: 1 }
+    sort: { created_at: -1 }
   });
   console.log('当前页记录:', pageResult.data);
   console.log('总记录数:', pageResult.total);
 
-  // 更新记录 (局部合并更新)
+  // ④ 根据 ID 查询单条
+  const single = await todos.findById(item.id);
+
+  // ⑤ 局部更新记录
   await todos.updateById(item.id, { completed: true });
 
-  // 删除记录
+  // ⑥ 批量更新
+  await todos.updateMany({ completed: false }, { status: 'archived' });
+
+  // ⑦ 删除记录
   await todos.deleteById(item.id);
 }
 
@@ -113,9 +125,114 @@ run();
 
 ---
 
-### 方式 B：桌面端 / 本地脚本嵌入式模式 (Embedded Mode)
+### 2. Vue 3 (组合式 API / `<script setup>`)
 
-在 Electron、Tauri、命令行脚本中，**无需启动 HTTP 端口**，直接零开销读写本地文件，**API 与远程模式 100% 保持完全同构**：
+```vue
+<template>
+  <div class="todo-app">
+    <h2>LiteDB 待办列表</h2>
+    
+    <!-- 输入框 -->
+    <div class="input-row">
+      <input v-model="newTitle" placeholder="输入待办标题" @keydown.enter="addTodo" />
+      <button @click="addTodo">添加</button>
+    </div>
+
+    <!-- 列表 -->
+    <ul>
+      <li v-for="item in todos" :key="item.id">
+        <span :class="{ done: item.completed }">{{ item.title }}</span>
+        <button @click="toggleTodo(item)">{{ item.completed ? '未完成' : '完成' }}</button>
+        <button @click="deleteTodo(item.id)">删除</button>
+      </li>
+    </ul>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue';
+import { LiteDB } from '@litedb/client';
+
+const db = new LiteDB({
+  endpoint: 'http://localhost:3000',
+  apiKey: 'key_frontend_webapp_live'
+});
+
+const todoCol = db.collection('todos');
+const todos = ref([]);
+const newTitle = ref('');
+
+const loadTodos = async () => {
+  todos.value = await todoCol.find({}, { sort: { id: -1 } });
+};
+
+const addTodo = async () => {
+  if (!newTitle.value.trim()) return;
+  await todoCol.insert({ title: newTitle.value, completed: false });
+  newTitle.value = '';
+  loadTodos();
+};
+
+const toggleTodo = async (item) => {
+  await todoCol.updateById(item.id, { completed: !item.completed });
+  loadTodos();
+};
+
+const deleteTodo = async (id) => {
+  await todoCol.deleteById(id);
+  loadTodos();
+};
+
+onMounted(loadTodos);
+</script>
+```
+
+---
+
+### 3. React (Hooks)
+
+```tsx
+import React, { useEffect, useState } from 'react';
+import { LiteDB } from '@litedb/client';
+
+const db = new LiteDB({
+  endpoint: 'http://localhost:3000',
+  apiKey: 'key_frontend_webapp_live'
+});
+const usersCol = db.collection('users');
+
+export function UserList() {
+  const [users, setUsers] = useState<any[]>([]);
+
+  const loadUsers = async () => {
+    const list = await usersCol.find({}, { sort: { id: -1 } });
+    setUsers(list);
+  };
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  return (
+    <div>
+      <h3>用户列表 ({users.length})</h3>
+      <ul>
+        {users.map(u => (
+          <li key={u.id}>
+            <strong>#{u.id} {u.name}</strong> - {u.email} ({u.role})
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+---
+
+### 4. 桌面端 / 本地脚本嵌入式模式 (Embedded Mode)
+
+在 Electron、Tauri 或 Node.js 离线脚本中，**无需启动 HTTP 端口**，直接零开销读写本地 SQLite 文件，**语法与远程模式 100% 保持完全同构**：
 
 ```typescript
 import { LiteDB } from '@litedb/client';
@@ -136,27 +253,72 @@ console.log(allNotes);
 
 ---
 
-### 方式 C：纯原生 Fetch 方式（零依赖前端）
-
-如果前端不想引入任何第三方 npm 包，直接使用浏览器原生 `fetch` 即可：
+### 5. 纯原生 Fetch 方式（前端零依赖）
 
 ```javascript
-// 新增文档
-fetch('http://localhost:3000/api/collections/posts/insert', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer YOUR_KEY' },
-  body: JSON.stringify({ title: '纯原生 Fetch 极速调用', views: 100 })
-});
+const BASE_URL = 'http://localhost:3000/api';
+const API_KEY = 'key_frontend_webapp_live';
 
-// 查询文档
-fetch('http://localhost:3000/api/collections/posts/query', {
+const headers = {
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${API_KEY}`
+};
+
+// 插入文档
+fetch(`${BASE_URL}/collections/todos/insert`, {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer YOUR_KEY' },
+  headers,
+  body: JSON.stringify({ title: '纯原生 Fetch 极速调用', views: 100 })
+}).then(r => r.json()).then(console.log);
+
+// 高级条件查询
+fetch(`${BASE_URL}/collections/todos/query`, {
+  method: 'POST',
+  headers,
   body: JSON.stringify({
     filter: { views: { $gte: 50 } },
-    sort: { id: 1 }
+    sort: { id: -1 },
+    page: 1,
+    pageSize: 20
   })
-}).then(r => r.json()).then(res => console.log(res.data));
+}).then(r => r.json()).then(res => console.log('查询结果:', res.data));
+```
+
+---
+
+### 6. Python 与 cURL 脚本接入
+
+#### Python 示例 (`requests`):
+```python
+import requests
+
+BASE_URL = "http://localhost:3000/api"
+HEADERS = {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer key_frontend_webapp_live"
+}
+
+# 1. 插入文档
+doc = {"name": "张三", "age": 26, "city": "北京"}
+r = requests.post(f"{BASE_URL}/collections/users/insert", json=doc, headers=HEADERS)
+print("插入返回:", r.json())
+
+# 2. 查询列表
+query_payload = {
+    "filter": {"age": {"$gte": 18}},
+    "sort": {"id": -1}
+}
+res = requests.post(f"{BASE_URL}/collections/users/query", json=query_payload, headers=HEADERS)
+print("用户列表:", res.json()["data"])
+```
+
+#### cURL 示例:
+```bash
+# 查询 users 集合
+curl -X POST http://localhost:3000/api/collections/users/query \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer key_frontend_webapp_live" \
+  -d '{"filter": {"role": "admin"}}'
 ```
 
 ---

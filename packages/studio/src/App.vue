@@ -1,15 +1,40 @@
 <template>
   <div class="app-layout">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="logo-icon">
-          <Database :size="20" />
+    <!-- Mobile Drawer Overlay Backdrop -->
+    <div
+      v-if="isMobileMenuOpen"
+      class="mobile-drawer-overlay"
+      @click="isMobileMenuOpen = false"
+    ></div>
+
+    <!-- Sidebar (Responsive Drawer on Mobile) -->
+    <aside :class="['sidebar', isMobileMenuOpen ? 'open' : '']">
+      <div class="sidebar-header-row flex-between">
+        <div
+          class="brand"
+          role="button"
+          tabindex="0"
+          title="返回概览与监控 (#/dashboard)"
+          @click="switchTab('dashboard')"
+          @keydown.enter="switchTab('dashboard')"
+        >
+          <div class="logo-icon">
+            <Database :size="20" />
+          </div>
+          <div class="brand-text">
+            <span class="brand-name">LiteDB</span>
+            <span class="brand-badge">Studio</span>
+          </div>
         </div>
-        <div class="brand-text">
-          <span class="brand-name">LiteDB</span>
-          <span class="brand-badge">Studio</span>
-        </div>
+
+        <!-- Mobile Close Drawer Button -->
+        <button
+          class="btn-icon mobile-close-btn"
+          aria-label="关闭菜单"
+          @click="isMobileMenuOpen = false"
+        >
+          <X :size="18" />
+        </button>
       </div>
 
       <nav class="nav-menu">
@@ -21,7 +46,6 @@
           <span>概览与监控</span>
         </button>
 
-        <div class="nav-section-title">数据管理</div>
         <button
           :class="['nav-item', currentTab === 'collections' ? 'active' : '']"
           @click="switchTab('collections')"
@@ -31,28 +55,11 @@
         </button>
 
         <button
-          :class="['nav-item', currentTab === 'sql' ? 'active' : '']"
-          @click="switchTab('sql')"
-        >
-          <Terminal :size="18" />
-          <span>SQL 工作台</span>
-        </button>
-
-        <div class="nav-section-title">开发与设置</div>
-        <button
           :class="['nav-item', currentTab === 'auth' ? 'active' : '']"
           @click="switchTab('auth')"
         >
           <Key :size="18" />
           <span>API 密钥授权</span>
-        </button>
-
-        <button
-          :class="['nav-item', currentTab === 'codegen' ? 'active' : '']"
-          @click="switchTab('codegen')"
-        >
-          <Code2 :size="18" />
-          <span>API 代码生成器</span>
         </button>
 
         <button
@@ -71,9 +78,9 @@
             {{ isConnected ? `已连接: ${endpoint}` : '未连接服务' }}
           </span>
         </div>
-        <button class="btn btn-secondary btn-sm full-width" @click="isSettingsOpen = true">
+        <button class="btn btn-secondary btn-sm full-width" @click="openSettings">
           <Settings :size="14" />
-          <span>连接设置 (API Key)</span>
+          <span>连接设置</span>
         </button>
       </div>
     </aside>
@@ -82,10 +89,22 @@
     <main class="main-content">
       <!-- Topbar -->
       <header class="topbar">
-        <div class="topbar-title-group">
-          <h1>{{ currentHeading.title }}</h1>
-          <span class="subtext">{{ currentHeading.subtext }}</span>
+        <div class="topbar-left-group flex-center gap-3">
+          <!-- Mobile Hamburger Toggle Button -->
+          <button
+            class="btn-icon mobile-menu-toggle"
+            aria-label="打开菜单"
+            @click="isMobileMenuOpen = true"
+          >
+            <Menu :size="20" />
+          </button>
+
+          <div class="topbar-title-group">
+            <h1>{{ currentHeading.title }}</h1>
+            <span class="subtext">{{ currentHeading.subtext }}</span>
+          </div>
         </div>
+
         <div class="topbar-actions flex-center gap-2">
           <!-- Theme Toggle Button -->
           <button
@@ -97,7 +116,21 @@
             <Moon v-else :size="16" />
           </button>
 
-          <button class="btn btn-primary" @click="openCreateCollection">
+          <!-- Context-Aware Topbar Action Button -->
+          <button
+            v-if="currentTab === 'auth'"
+            class="btn btn-primary"
+            @click="openCreateApiKey"
+          >
+            <Plus :size="16" />
+            <span>新建 API 密钥</span>
+          </button>
+
+          <button
+            v-else-if="currentTab === 'collections' || currentTab === 'dashboard'"
+            class="btn btn-primary"
+            @click="openCreateCollection"
+          >
             <Plus :size="16" />
             <span>新建集合</span>
           </button>
@@ -117,11 +150,7 @@
           @select-collection="handleSelectCollection"
         />
 
-        <SqlConsoleView v-else-if="currentTab === 'sql'" />
-
         <AuthManagerView v-else-if="currentTab === 'auth'" />
-
-        <CodeGenView v-else-if="currentTab === 'codegen'" />
 
         <BackupRestoreView v-else-if="currentTab === 'backup'" />
       </div>
@@ -142,22 +171,20 @@ import {
   Database,
   LayoutGrid,
   FolderKanban,
-  Terminal,
   Key,
-  Code2,
   HardDriveDownload,
   Settings,
   Plus,
   Sun,
-  Moon
+  Moon,
+  Menu,
+  X
 } from 'lucide-vue-next';
 
 import { useLiteDB } from './composables/useLiteDB.js';
 import DashboardView from './components/DashboardView.vue';
 import CollectionsView from './components/CollectionsView.vue';
-import SqlConsoleView from './components/SqlConsoleView.vue';
 import AuthManagerView from './components/AuthManagerView.vue';
-import CodeGenView from './components/CodeGenView.vue';
 import BackupRestoreView from './components/BackupRestoreView.vue';
 import SettingsModal from './components/SettingsModal.vue';
 import CreateCollectionModal from './components/CreateCollectionModal.vue';
@@ -172,10 +199,13 @@ const {
   isConnected,
   isSettingsOpen,
   openCreateCollection,
+  openCreateApiKey,
   checkConnection
 } = useLiteDB();
 
-const validTabs = ['dashboard', 'collections', 'sql', 'auth', 'codegen', 'backup'];
+const isMobileMenuOpen = ref(false);
+
+const validTabs = ['dashboard', 'collections', 'auth', 'backup'];
 
 // Persistent Tab & Collection state from URL Hash or localStorage
 const parseRouteFromHash = () => {
@@ -216,6 +246,12 @@ const updateUrlHash = (tab, col = '') => {
 const switchTab = (tab) => {
   currentTab.value = tab;
   updateUrlHash(tab, tab === 'collections' ? targetCollection.value : '');
+  isMobileMenuOpen.value = false;
+};
+
+const openSettings = () => {
+  isSettingsOpen.value = true;
+  isMobileMenuOpen.value = false;
 };
 
 const handleSelectCollection = (colName) => {
@@ -246,9 +282,7 @@ const syncFromHash = () => {
 const headings = {
   dashboard: { title: '概览与监控', subtext: 'LiteDB 运行状态与核心数据总览' },
   collections: { title: '集合与数据工作台', subtext: '管理所有集合，可视化浏览与编辑 JSON 文档' },
-  sql: { title: 'SQL 终端控制台', subtext: '直接执行原生 SQLite 查询与结构分析' },
   auth: { title: 'API 密钥授权管理', subtext: '生成与管理供前端或桌面端调用的访问密钥' },
-  codegen: { title: 'API 代码生成器', subtext: '开箱即用的前端与客户端调用代码片段' },
   backup: { title: '数据备份与恢复', subtext: '全量 JSON 快照导出与一键导入' }
 };
 
@@ -274,9 +308,11 @@ onUnmounted(() => {
   height: 100vh;
   width: 100vw;
   background-color: var(--bg-app);
+  position: relative;
+  overflow: hidden;
 }
 
-/* Sidebar */
+/* Sidebar (Desktop) */
 .sidebar {
   width: 260px;
   background-color: var(--bg-sidebar);
@@ -284,7 +320,12 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  transition: background-color 0.2s, border-color 0.2s;
+  transition: background-color 0.2s, border-color 0.2s, transform 0.25s ease;
+  z-index: 100;
+}
+
+.sidebar-header-row {
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .brand {
@@ -292,7 +333,22 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+  flex: 1;
+}
+
+.brand:hover {
+  background-color: var(--table-hover-bg);
+}
+
+.brand:hover .brand-name {
+  color: var(--color-primary);
+}
+
+.brand:active {
+  opacity: 0.85;
 }
 
 .logo-icon {
@@ -325,19 +381,18 @@ onUnmounted(() => {
   margin-left: 6px;
 }
 
+.mobile-close-btn {
+  display: none;
+  margin-right: 12px;
+}
+
 .nav-menu {
   padding: 16px 12px;
   flex: 1;
   overflow-y: auto;
-}
-
-.nav-section-title {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-dim);
-  padding: 14px 12px 6px;
-  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .nav-item {
@@ -364,7 +419,7 @@ onUnmounted(() => {
 
 .nav-item.active {
   background: rgba(2, 132, 199, 0.15);
-  color: #38bdf8;
+  color: var(--color-primary);
   font-weight: 600;
 }
 
@@ -409,10 +464,11 @@ onUnmounted(() => {
   overflow-y: auto;
   background-color: var(--bg-app);
   transition: background-color 0.2s;
+  min-width: 0;
 }
 
 .topbar {
-  padding: 20px 32px;
+  padding: 18px 28px;
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
   justify-content: space-between;
@@ -423,26 +479,105 @@ onUnmounted(() => {
   top: 0;
   z-index: 10;
   transition: background-color 0.2s, border-color 0.2s;
+  gap: 12px;
+}
+
+.topbar-left-group {
+  min-width: 0;
+}
+
+.mobile-menu-toggle {
+  display: none;
 }
 
 .topbar-title-group h1 {
-  font-size: 1.35rem;
+  font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .topbar-title-group .subtext {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.topbar-actions {
+  flex-shrink: 0;
 }
 
 .tab-view-container {
-  padding: 32px;
+  padding: 24px;
   animation: fadeIn 0.2s ease;
+  flex: 1;
 }
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* Mobile & Tablet Adaptation */
+.mobile-drawer-overlay {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-drawer-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(3px);
+    z-index: 1040;
+    animation: fadeIn 0.15s ease;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 280px;
+    max-width: 80vw;
+    z-index: 1050;
+    transform: translateX(-100%);
+    box-shadow: none;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 25px rgba(0, 0, 0, 0.5);
+  }
+
+  .mobile-close-btn {
+    display: flex;
+  }
+
+  .mobile-menu-toggle {
+    display: flex;
+  }
+
+  .topbar {
+    padding: 12px 16px;
+  }
+
+  .topbar-title-group h1 {
+    font-size: 1.1rem;
+  }
+
+  .topbar-title-group .subtext {
+    display: none; /* Hide subtext on mobile to save vertical space */
+  }
+
+  .tab-view-container {
+    padding: 14px 12px;
+  }
 }
 </style>

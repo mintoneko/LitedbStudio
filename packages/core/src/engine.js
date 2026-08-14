@@ -63,6 +63,17 @@ export class LiteDBEngine {
   }
 
   /**
+   * Check if a collection exists in metadata
+   * @param {string} name
+   * @returns {boolean}
+   */
+  hasCollection(name) {
+    const cleanName = sanitizeCollectionName(name);
+    const row = this.adapter.prepare(`SELECT name FROM "_litedb_meta" WHERE name = ?`).get(cleanName);
+    return !!row;
+  }
+
+  /**
    * List all collections with stats
    * @returns {{ name: string, count: number, created_at: string, updated_at: string }[]}
    */
@@ -94,9 +105,15 @@ export class LiteDBEngine {
    * @param {string} name
    */
   dropCollection(name) {
-    const col = this.collection(name);
-    col.drop();
-    this._collections.delete(name);
+    const cleanName = sanitizeCollectionName(name);
+    if (this._collections.has(cleanName)) {
+      const col = this._collections.get(cleanName);
+      col.drop();
+      this._collections.delete(cleanName);
+    } else {
+      this.adapter.exec(`DROP TABLE IF EXISTS "col_${cleanName}"`);
+      this._unregisterCollection(cleanName);
+    }
   }
 
   /**

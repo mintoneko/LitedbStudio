@@ -10,7 +10,9 @@
           </div>
           <h3>{{ confirmState.title }}</h3>
         </div>
-        <button class="btn-close" aria-label="关闭" @click="handleCancel">&times;</button>
+        <button class="btn-close" aria-label="关闭" @click="handleCancel">
+          <X :size="18" />
+        </button>
       </div>
 
       <div class="modal-body">
@@ -34,7 +36,7 @@
 
 <script setup>
 import { onMounted, onUnmounted } from 'vue';
-import { AlertTriangle, AlertCircle, Info } from 'lucide-vue-next';
+import { AlertTriangle, AlertCircle, Info, X } from 'lucide-vue-next';
 import { useLiteDB } from '../composables/useLiteDB.js';
 
 const { confirmState, resolveConfirm } = useLiteDB();
@@ -168,15 +170,23 @@ onUnmounted(() => {
 
 .btn-close {
   background: transparent;
-  border: none;
-  color: var(--text-muted);
-  font-size: 1.4rem;
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  line-height: 1;
-  padding: 0 4px;
+  padding: 0;
+  transition: all 0.18s ease;
 }
 
 .btn-close:hover {
   color: var(--text-main);
+  background: var(--table-hover-bg);
+  border-color: var(--border-subtle);
+  transform: rotate(90deg);
 }
 </style>

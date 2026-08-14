@@ -3,12 +3,14 @@
     <div class="modal-card">
       <div class="modal-header flex-between">
         <h3>{{ docId ? `编辑文档 [${docId}]` : `添加新文档到 [${collectionName}]` }}</h3>
-        <button class="btn-close" @click="close">&times;</button>
+        <button class="btn-close" aria-label="关闭" @click="close">
+          <X :size="18" />
+        </button>
       </div>
       <div class="modal-body">
         <div class="form-group">
           <div class="flex-between mb-2">
-            <label>JSON 文档数据 (ID 将自动从 1 开始递增):</label>
+            <label>JSON 文档数据:</label>
             <button class="btn btn-xs btn-secondary" @click="formatJson">格式化 JSON</button>
           </div>
           <textarea
@@ -33,6 +35,7 @@
 
 <script setup>
 import { ref, watch } from 'vue';
+import { X } from 'lucide-vue-next';
 
 const props = defineProps({
   isOpen: Boolean,
@@ -166,10 +169,23 @@ const save = () => {
 
 .btn-close {
   background: transparent;
-  border: none;
-  color: #94a3b8;
-  font-size: 1.5rem;
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  line-height: 1;
+  padding: 0;
+  transition: all 0.18s ease;
+}
+
+.btn-close:hover {
+  color: var(--text-main);
+  background: var(--table-hover-bg);
+  border-color: var(--border-subtle);
+  transform: rotate(90deg);
 }
 </style>

@@ -8,14 +8,16 @@
           </div>
           <h3>新建 API 访问密钥</h3>
         </div>
-        <button class="btn-close" aria-label="关闭" @click="close">&times;</button>
+        <button class="btn-close" aria-label="关闭" @click="close">
+          <X :size="18" />
+        </button>
       </div>
 
       <form @submit.prevent="handleCreate">
         <div class="modal-body">
           <div class="form-group">
             <label for="key-name-input">
-              密钥名称 / 用途说明
+              密钥名称
               <span class="required-star">*</span>
             </label>
             <input
@@ -24,7 +26,7 @@
               v-model="keyName"
               type="text"
               class="form-input"
-              placeholder="例如: 我的 Vue 前端应用 / 移动端 App"
+              placeholder="输入密钥名称"
               autocomplete="off"
               :disabled="submitting"
               @input="errorMessage = ''"
@@ -32,7 +34,7 @@
           </div>
 
           <div class="form-group">
-            <label>权限级别 (Permission Role)</label>
+            <label>权限级别</label>
             <div class="role-selector-grid">
               <label
                 :class="['role-card', selectedRole === 'read-write' ? 'selected' : '']"
@@ -46,7 +48,7 @@
                   class="sr-only"
                 />
                 <div class="role-card-header flex-between">
-                  <span class="role-title">读写权限 (read-write)</span>
+                  <span class="role-title">读写权限</span>
                   <span class="badge badge-success">推荐</span>
                 </div>
                 <p class="role-desc">允许对数据集合进行查询、新增、修改与删除文档。</p>
@@ -64,7 +66,7 @@
                   class="sr-only"
                 />
                 <div class="role-card-header flex-between">
-                  <span class="role-title">只读权限 (read-only)</span>
+                  <span class="role-title">只读权限</span>
                 </div>
                 <p class="role-desc">仅允许查询和读取集合数据，禁止任何写操作与数据修改。</p>
               </label>
@@ -81,7 +83,7 @@
                   class="sr-only"
                 />
                 <div class="role-card-header flex-between">
-                  <span class="role-title">超级管理 (admin)</span>
+                  <span class="role-title">超级管理</span>
                   <span class="badge badge-primary">最高权限</span>
                 </div>
                 <p class="role-desc">拥有全部权限，包括集合创建与删除、API 密钥管理及 SQL 执行。</p>
@@ -110,7 +112,7 @@
 
 <script setup>
 import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
-import { KeyRound } from 'lucide-vue-next';
+import { KeyRound, X } from 'lucide-vue-next';
 import { useLiteDB } from '../composables/useLiteDB.js';
 
 const emit = defineEmits(['created']);
@@ -326,16 +328,24 @@ onUnmounted(() => {
 
 .btn-close {
   background: transparent;
-  border: none;
-  color: var(--text-muted);
-  font-size: 1.5rem;
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  line-height: 1;
-  padding: 0 4px;
+  padding: 0;
+  transition: all 0.18s ease;
 }
 
 .btn-close:hover {
   color: var(--text-main);
+  background: var(--table-hover-bg);
+  border-color: var(--border-subtle);
+  transform: rotate(90deg);
 }
 
 .loading-spinner {

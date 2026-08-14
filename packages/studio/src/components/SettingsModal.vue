@@ -1,47 +1,55 @@
 <template>
-  <div v-if="isSettingsOpen" class="modal-overlay">
-    <div class="modal-card">
+  <div v-if="isSettingsOpen" class="modal-overlay" @click.self="isSettingsOpen = false">
+    <div class="modal-card" role="dialog" aria-modal="true">
       <div class="modal-header flex-between">
         <h3>LiteDB 连接设置</h3>
-        <button class="btn-close" @click="isSettingsOpen = false">&times;</button>
+        <button class="btn-close" aria-label="关闭" @click="isSettingsOpen = false">
+          <X :size="18" />
+        </button>
       </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label>服务端 API 基础地址 (Endpoint):</label>
-          <input
-            v-model="tempEndpoint"
-            type="text"
-            class="form-input"
-            placeholder="http://localhost:3000"
-          />
+
+      <form @submit.prevent="saveSettings">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>服务端 API 基础地址:</label>
+            <input
+              v-model="tempEndpoint"
+              type="text"
+              class="form-input"
+              placeholder="http://localhost:3000"
+              @keydown.enter="saveSettings"
+            />
+          </div>
+          <div class="form-group">
+            <label>管理员 API 密钥:</label>
+            <input
+              ref="keyInputRef"
+              v-model="tempApiKey"
+              type="password"
+              class="form-input"
+              placeholder="输入管理员 API 密钥"
+              @keydown.enter="saveSettings"
+            />
+          </div>
         </div>
-        <div class="form-group">
-          <label>管理员 API 密钥 (Admin API Key):</label>
-          <input
-            v-model="tempApiKey"
-            type="password"
-            class="form-input"
-            placeholder="admin_..."
-          />
-          <span class="text-xs text-muted mt-1 block">
-            默认管理员Key服务端启动时可在控制台查看。
-          </span>
+
+        <div class="modal-footer flex-end gap-2">
+          <button type="button" class="btn btn-ghost" @click="isSettingsOpen = false">取消</button>
+          <button type="submit" class="btn btn-primary">保存并验证连接</button>
         </div>
-      </div>
-      <div class="modal-footer flex-end gap-2">
-        <button class="btn btn-ghost" @click="isSettingsOpen = false">取消</button>
-        <button class="btn btn-primary" @click="saveSettings">保存并验证连接</button>
-      </div>
+      </form>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, nextTick } from 'vue';
+import { X } from 'lucide-vue-next';
 import { useLiteDB } from '../composables/useLiteDB.js';
 
 const { endpoint, apiKey, isSettingsOpen, setEndpointAndKey } = useLiteDB();
 
+const keyInputRef = ref(null);
 const tempEndpoint = ref(endpoint.value);
 const tempApiKey = ref(apiKey.value);
 
@@ -49,6 +57,9 @@ watch(isSettingsOpen, (open) => {
   if (open) {
     tempEndpoint.value = endpoint.value;
     tempApiKey.value = apiKey.value;
+    nextTick(() => {
+      keyInputRef.value?.focus();
+    });
   }
 });
 
@@ -109,14 +120,24 @@ const saveSettings = () => {
 
 .btn-close {
   background: transparent;
-  border: none;
-  color: #94a3b8;
-  font-size: 1.5rem;
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  line-height: 1;
+  padding: 0;
+  transition: all 0.18s ease;
 }
+
 .btn-close:hover {
-  color: #fff;
+  color: var(--text-main);
+  background: var(--table-hover-bg);
+  border-color: var(--border-subtle);
+  transform: rotate(90deg);
 }
 
 .block {

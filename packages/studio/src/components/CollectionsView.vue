@@ -19,13 +19,23 @@
           @click="selectCollection(c.name)"
         >
           <span class="collection-name">{{ c.name }}</span>
-          <span class="collection-count-badge">{{ c.count }}</span>
+          <div class="collection-nav-right flex-center gap-1">
+            <span class="collection-count-badge">{{ c.count }}</span>
+            <button
+              class="btn-nav-delete"
+              title="删除该集合"
+              @click.stop="dropCollectionByName(c.name)"
+            >
+              <Trash2 :size="12" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Collection Data Main -->
     <div class="collection-data-main">
+      <!-- Top Toolbar -->
       <div class="data-toolbar flex-between">
         <div class="toolbar-left flex-center gap-2">
           <div class="current-collection-tag">{{ activeCollection || '请选择集合' }}</div>
@@ -34,7 +44,7 @@
             <input
               v-model="filterInput"
               type="text"
-              placeholder="JSON过滤条件，例如: { &quot;age&quot;: { &quot;$gte&quot;: 18 } }"
+              placeholder="输入 JSON 过滤条件"
               @keydown.enter="executeQuery"
             />
           </div>
@@ -43,29 +53,43 @@
         </div>
 
         <div class="toolbar-right flex-center gap-2">
-          <button class="btn btn-success btn-sm" :disabled="!activeCollection" @click="openAddModal">
-            <Plus :size="14" />
-            <span>添加文档</span>
+          <button
+            class="btn-icon-action btn-add-action"
+            title="添加文档"
+            :disabled="!activeCollection"
+            @click="openAddModal"
+          >
+            <Plus :size="16" />
           </button>
-          <button class="btn btn-danger-outline btn-sm" :disabled="!activeCollection" @click="clearCollection">
-            <span>清空</span>
+          <button
+            class="btn-icon-action btn-clear-action"
+            title="清空集合数据"
+            :disabled="!activeCollection"
+            @click="clearCollection"
+          >
+            <Eraser :size="16" />
           </button>
-          <button class="btn btn-danger-outline btn-sm" :disabled="!activeCollection" @click="dropCollection">
-            <span>删除集合</span>
+          <button
+            class="btn-icon-action btn-delete-action"
+            title="删除集合"
+            :disabled="!activeCollection"
+            @click="dropCollectionByName(activeCollection)"
+          >
+            <FolderMinus :size="16" />
           </button>
         </div>
       </div>
 
-      <!-- Data Table -->
+      <!-- Data Table Area -->
       <div class="data-table-container">
         <table class="data-table">
           <thead>
             <tr>
-              <th style="width: 140px;">ID</th>
-              <th>文档内容</th>
+              <th style="width: 90px;">ID</th>
+              <th>文档数据</th>
               <th style="width: 160px;">创建时间</th>
               <th style="width: 160px;">更新时间</th>
-              <th class="text-right" style="width: 130px;">操作</th>
+              <th class="text-right" style="width: 150px; white-space: nowrap;">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -78,53 +102,45 @@
             <tr v-else-if="records.length === 0">
               <td colspan="5" class="text-center py-8 text-muted">当前集合暂无匹配文档记录</td>
             </tr>
-            <tr v-for="doc in records" :key="doc.id">
-              <!-- ID Column: Supports Integer & String -->
-              <td class="align-top">
-                <div class="id-wrapper flex-center gap-1">
-                  <span v-if="isNumericId(doc.id)" class="numeric-id-badge">
-                    #{{ doc.id }}
-                  </span>
-                  <code v-else class="string-id-badge" :title="String(doc.id)">
-                    {{ doc.id }}
-                  </code>
-                </div>
+            <tr v-for="doc in records" :key="doc.id" class="doc-row">
+              <!-- ID Column -->
+              <td>
+                <span v-if="isNumericId(doc.id)" class="numeric-id-badge">
+                  #{{ doc.id }}
+                </span>
+                <code v-else class="string-id-badge" :title="String(doc.id)">
+                  {{ doc.id }}
+                </code>
               </td>
 
-              <!-- Document Content Column: High Contrast & Structured -->
-              <td class="align-top">
-                <div class="doc-fields-container">
-                  <div class="fields-list">
-                    <div
-                      v-for="(val, key) in extractCustomFields(doc)"
-                      :key="key"
-                      class="field-item"
-                    >
-                      <span class="field-key">{{ key }}:</span>
-                      <span :class="['field-value', getValTypeClass(val)]">
-                        {{ formatFieldValue(val) }}
-                      </span>
-                    </div>
-                  </div>
-                  <button
-                    class="btn-copy-doc"
-                    title="复制完整 JSON"
-                    @click="copyDocJson(doc)"
-                  >
-                    <Copy :size="12" />
-                  </button>
-                </div>
+              <!-- Clean Document Action Button Column -->
+              <td style="white-space: nowrap;">
+                <button
+                  class="btn-view-doc"
+                  title="查看文档详情"
+                  @click="openViewModal(doc)"
+                >
+                  <Eye :size="14" class="icon-eye" />
+                  <span class="btn-text">查看文档</span>
+                </button>
               </td>
 
-              <!-- Time columns -->
-              <td class="align-top text-dim text-xs">{{ formatDate(doc.created_at) }}</td>
-              <td class="align-top text-dim text-xs">{{ formatDate(doc.updated_at) }}</td>
+              <!-- Timestamps -->
+              <td class="text-dim text-xs">{{ formatDate(doc.created_at) }}</td>
+              <td class="text-dim text-xs">{{ formatDate(doc.updated_at) }}</td>
 
               <!-- Actions -->
-              <td class="align-top text-right">
-                <div class="actions-group flex-end gap-1">
-                  <button class="btn btn-xs btn-secondary" @click="openEditModal(doc)">编辑</button>
-                  <button class="btn btn-xs btn-danger-outline" @click="deleteDoc(doc.id)">删除</button>
+              <td class="text-right" style="white-space: nowrap;">
+                <div class="actions-group flex-end gap-2">
+                  <button class="btn-icon-action btn-copy-action" title="复制完整 JSON" @click="copyDocJson(doc)">
+                    <Copy :size="14" />
+                  </button>
+                  <button class="btn-icon-action btn-edit-action" title="编辑文档" @click="openEditModal(doc)">
+                    <Edit3 :size="14" />
+                  </button>
+                  <button class="btn-icon-action btn-delete-action" title="删除文档" @click="deleteDoc(doc.id)">
+                    <Trash2 :size="14" />
+                  </button>
                 </div>
               </td>
             </tr>
@@ -148,7 +164,16 @@
       </div>
     </div>
 
-    <!-- Document Modal -->
+    <!-- View Document Modal -->
+    <ViewDocumentModal
+      :is-open="isViewModalOpen"
+      :collection-name="activeCollection"
+      :doc-data="viewingDocData"
+      @close="isViewModalOpen = false"
+      @edit="handleEditFromView"
+    />
+
+    <!-- Edit/Add Document Modal -->
     <DocumentModal
       :is-open="isDocModalOpen"
       :collection-name="activeCollection"
@@ -162,9 +187,21 @@
 
 <script setup>
 import { ref, watch, onMounted } from 'vue';
-import { Plus, Search, ChevronLeft, ChevronRight, Copy } from 'lucide-vue-next';
+import {
+  Plus,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Eye,
+  Edit3,
+  Trash2,
+  Eraser,
+  FolderMinus
+} from 'lucide-vue-next';
 import { useLiteDB } from '../composables/useLiteDB.js';
 import DocumentModal from './DocumentModal.vue';
+import ViewDocumentModal from './ViewDocumentModal.vue';
 
 const emit = defineEmits(['select-collection']);
 
@@ -189,6 +226,10 @@ const currentPage = ref(1);
 const pageSize = ref(15);
 const totalPages = ref(1);
 const loading = ref(false);
+
+// Modals state
+const isViewModalOpen = ref(false);
+const viewingDocData = ref(null);
 
 const isDocModalOpen = ref(false);
 const editingDocId = ref('');
@@ -305,11 +346,12 @@ const clearCollection = async () => {
   }
 };
 
-const dropCollection = async () => {
-  if (!activeCollection.value) return;
+const dropCollectionByName = async (colName) => {
+  const target = colName || activeCollection.value;
+  if (!target) return;
   const confirmed = await showConfirm({
     title: '删除数据集合',
-    message: `确定要彻底删除集合 "${activeCollection.value}" 及其所有文档数据吗？删除后不可恢复！`,
+    message: `确定要彻底删除集合 "${target}" 及其所有文档数据吗？删除后不可恢复！`,
     confirmText: '确认删除集合',
     cancelText: '取消',
     type: 'danger'
@@ -317,19 +359,36 @@ const dropCollection = async () => {
   if (!confirmed) return;
 
   try {
-    await apiRequest(`/api/collections/${activeCollection.value}`, { method: 'DELETE' });
-    showToast(`集合 ${activeCollection.value} 已删除`, 'success');
-    activeCollection.value = '';
+    await apiRequest(`/api/collections/${target}`, { method: 'DELETE' });
+    showToast(`集合 ${target} 已删除`, 'success');
     await refreshCollections();
-    if (collections.value.length > 0) {
-      activeCollection.value = collections.value[0].name;
-      loadData();
+    if (activeCollection.value === target) {
+      if (collections.value.length > 0) {
+        selectCollection(collections.value[0].name);
+      } else {
+        activeCollection.value = '';
+        records.value = [];
+        totalRecords.value = 0;
+        emit('select-collection', '');
+      }
     }
   } catch (err) {
     showToast(`删除失败: ${err.message}`, 'error');
   }
 };
 
+// View Modal
+const openViewModal = (doc) => {
+  viewingDocData.value = doc;
+  isViewModalOpen.value = true;
+};
+
+const handleEditFromView = (doc) => {
+  isViewModalOpen.value = false;
+  openEditModal(doc);
+};
+
+// Edit / Add Modal
 const openAddModal = () => {
   editingDocId.value = '';
   editingDocData.value = null;
@@ -398,21 +457,30 @@ const extractCustomFields = (doc) => {
   return custom;
 };
 
-// Value type styling
-const getValTypeClass = (val) => {
-  if (typeof val === 'string') return 'val-string';
-  if (typeof val === 'number') return 'val-number';
-  if (typeof val === 'boolean') return 'val-boolean';
-  if (val === null || val === undefined) return 'val-null';
-  return 'val-object';
+const getCustomFieldCount = (doc) => {
+  if (!doc) return 0;
+  return Object.keys(extractCustomFields(doc)).length;
 };
 
-const formatFieldValue = (val) => {
-  if (val === null) return 'null';
-  if (val === undefined) return 'undefined';
-  if (typeof val === 'string') return `"${val}"`;
-  if (typeof val === 'object') return JSON.stringify(val);
-  return String(val);
+const getDocSnippet = (doc) => {
+  if (!doc) return '{}';
+  const custom = extractCustomFields(doc);
+  const entries = Object.entries(custom);
+  if (entries.length === 0) return '{ (空内容) }';
+  
+  const preview = entries.slice(0, 3).map(([k, v]) => {
+    let strVal = '';
+    if (typeof v === 'string') {
+      strVal = `"${v.length > 20 ? v.slice(0, 20) + '...' : v}"`;
+    } else if (typeof v === 'object' && v !== null) {
+      strVal = Array.isArray(v) ? `[...${v.length}]` : '{...}';
+    } else {
+      strVal = String(v);
+    }
+    return `${k}: ${strVal}`;
+  }).join(', ');
+
+  return `{ ${preview}${entries.length > 3 ? ', ...' : ''} }`;
 };
 
 const copyDocJson = (doc) => {
@@ -492,7 +560,7 @@ onMounted(() => {
 
 .collection-nav-item.active {
   background: rgba(2, 132, 199, 0.15);
-  color: #38bdf8;
+  color: var(--color-primary);
   font-weight: 600;
 }
 
@@ -501,6 +569,37 @@ onMounted(() => {
   background: rgba(128, 128, 128, 0.1);
   padding: 2px 6px;
   border-radius: 10px;
+}
+
+.collection-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-nav-delete {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.collection-nav-item:hover .btn-nav-delete {
+  opacity: 1;
+}
+
+.btn-nav-delete:hover {
+  color: #ffffff;
+  background: var(--color-danger);
 }
 
 .collection-data-main {
@@ -517,13 +616,15 @@ onMounted(() => {
   padding: 12px 18px;
   border-bottom: 1px solid var(--border-subtle);
   background: var(--table-header-bg);
+  gap: 12px;
 }
 
 .current-collection-tag {
   font-size: 0.85rem;
   font-weight: 700;
-  color: #38bdf8;
-  background: rgba(56, 189, 248, 0.1);
+  color: var(--color-primary);
+  background: rgba(2, 132, 199, 0.1);
+  border: 1px solid rgba(2, 132, 199, 0.2);
   padding: 4px 10px;
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
@@ -554,8 +655,64 @@ onMounted(() => {
   overflow: auto;
 }
 
-.align-top {
-  vertical-align: top;
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.doc-row {
+  transition: background-color 0.15s ease;
+}
+
+.doc-row:hover {
+  background-color: var(--table-hover-bg);
+}
+
+/* Document View Button */
+.btn-view-doc {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 6px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.btn-view-doc span {
+  white-space: nowrap;
+}
+
+.btn-view-doc:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: rgba(2, 132, 199, 0.08);
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.15);
+  transform: translateY(-1px);
+}
+
+.icon-eye {
+  color: var(--color-primary);
+}
+
+.badge-field-count {
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  background: rgba(2, 132, 199, 0.1);
+  color: var(--color-primary);
+  border: 1px solid rgba(2, 132, 199, 0.2);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
 }
 
 /* ID Badges */
@@ -563,9 +720,9 @@ onMounted(() => {
   font-family: var(--font-mono);
   font-size: 0.8rem;
   font-weight: 700;
-  color: #38bdf8;
-  background: rgba(56, 189, 248, 0.12);
-  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: var(--color-primary);
+  background: rgba(2, 132, 199, 0.12);
+  border: 1px solid rgba(2, 132, 199, 0.25);
   padding: 2px 8px;
   border-radius: 4px;
   display: inline-block;
@@ -574,97 +731,183 @@ onMounted(() => {
 .string-id-badge {
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  color: #38bdf8;
-  background: rgba(56, 189, 248, 0.08);
+  color: var(--color-primary);
+  background: rgba(2, 132, 199, 0.08);
   padding: 2px 6px;
   border-radius: 4px;
-  max-width: 130px;
+  max-width: 100px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   display: inline-block;
 }
 
-/* Document High-Contrast Field Rendering */
-.doc-fields-container {
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.fields-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 12px;
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  line-height: 1.6;
-}
-
-.field-item {
+.actions-group {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
+  white-space: nowrap;
 }
 
-.field-key {
-  color: var(--text-muted);
-  font-weight: 600;
-}
-
-.field-value {
-  font-weight: 500;
-}
-
-.val-string {
-  color: #34d399; /* Clear emerald green for strings */
-}
-
-.val-number {
-  color: #fbbf24; /* Amber yellow for numbers */
-}
-
-.val-boolean {
-  color: #c084fc; /* Bright purple for booleans */
-}
-
-.val-null {
-  color: #94a3b8;
-  font-style: italic;
-}
-
-.val-object {
-  color: #38bdf8;
-}
-
-.btn-copy-doc {
-  background: transparent;
-  border: 1px solid var(--border-subtle);
-  color: var(--text-dim);
-  border-radius: 4px;
-  width: 24px;
-  height: 24px;
-  display: flex;
+.btn-icon-action {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-input);
+  color: var(--text-muted);
   cursor: pointer;
+  transition: all 0.15s ease;
   flex-shrink: 0;
-  transition: all 0.15s;
 }
 
-.btn-copy-doc:hover {
-  color: var(--text-main);
-  background: var(--table-hover-bg);
-  border-color: var(--border-focus);
+.btn-icon-action:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
+.btn-copy-action:hover:not(:disabled) {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  background: rgba(2, 132, 199, 0.12);
+  transform: translateY(-1px);
+}
+
+.btn-add-action {
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.btn-add-action:hover:not(:disabled) {
+  color: #ffffff;
+  border-color: #10b981;
+  background: #10b981;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.btn-clear-action {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.btn-clear-action:hover:not(:disabled) {
+  color: #ffffff;
+  border-color: #f59e0b;
+  background: #f59e0b;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.btn-edit-action:hover:not(:disabled) {
+  color: #f59e0b;
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+  transform: translateY(-1px);
+}
+
+.btn-delete-action {
+  color: var(--color-danger);
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.btn-delete-action:hover:not(:disabled) {
+  color: #ffffff;
+  border-color: var(--color-danger);
+  background: var(--color-danger);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+/* Pagination */
 .pagination-bar {
   padding: 10px 18px;
   border-top: 1px solid var(--border-subtle);
   background: var(--table-header-bg);
   font-size: 0.8rem;
   color: var(--text-muted);
+}
+
+/* Mobile & Tablet Adaptation */
+@media (max-width: 860px) {
+  .collection-layout {
+    flex-direction: column;
+    height: auto;
+    min-height: calc(100vh - 120px);
+    gap: 12px;
+  }
+
+  .collection-sidebar {
+    width: 100%;
+    border-radius: var(--radius-sm);
+  }
+
+  .collection-list-nav {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 6px;
+    padding: 8px 12px;
+  }
+
+  .collection-nav-item {
+    margin-bottom: 0;
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: var(--table-hover-bg);
+  }
+
+  .collection-nav-item.active {
+    background: var(--color-primary);
+    color: #ffffff;
+  }
+
+  .collection-nav-item.active .collection-count-badge {
+    background: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+  }
+
+  .data-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .toolbar-left {
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 6px;
+  }
+
+  .search-box {
+    width: 100%;
+    order: 3;
+  }
+
+  .toolbar-right {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 6px;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 8px;
+  }
+
+  .pagination-bar {
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+  }
 }
 </style>

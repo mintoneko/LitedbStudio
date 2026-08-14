@@ -21,7 +21,7 @@
                 <th>权限级别</th>
                 <th>创建时间</th>
                 <th>最后使用</th>
-                <th class="text-right">操作</th>
+                <th class="text-right" style="width: 110px; white-space: nowrap;">操作</th>
               </tr>
             </thead>
             <tbody>
@@ -33,8 +33,15 @@
               </tr>
               <tr v-for="k in keys" :key="k.id">
                 <td><strong>{{ k.name }}</strong></td>
-                <td>
-                  <code class="key-token">{{ k.key }}</code>
+                <td style="white-space: nowrap;">
+                  <button
+                    class="btn-view-doc"
+                    title="查看 API 密钥详情"
+                    @click="openViewKeyModal(k)"
+                  >
+                    <Key :size="14" class="icon-eye" />
+                    <span class="btn-text">查看密钥</span>
+                  </button>
                 </td>
                 <td>
                   <span :class="['badge', k.role === 'admin' ? 'badge-primary' : 'badge-success']">
@@ -43,13 +50,15 @@
                 </td>
                 <td class="text-dim text-xs">{{ formatDate(k.created_at) }}</td>
                 <td class="text-dim text-xs">{{ k.last_used_at ? formatDate(k.last_used_at) : '从未使用' }}</td>
-                <td class="text-right">
-                  <button class="btn btn-xs btn-secondary mr-1" @click="copyKey(k.key)">
-                    <Copy :size="12" /> 复制
-                  </button>
-                  <button class="btn btn-xs btn-danger-outline" @click="deleteKey(k.id)">
-                    <Trash2 :size="12" /> 删除
-                  </button>
+                <td class="text-right" style="white-space: nowrap;">
+                  <div class="actions-group flex-end gap-2">
+                    <button class="btn-icon-action btn-copy-action" title="复制 API 密钥" @click="copyKey(k.key)">
+                      <Copy :size="14" />
+                    </button>
+                    <button class="btn-icon-action btn-delete-action" title="删除 API 密钥" @click="deleteKey(k.id)">
+                      <Trash2 :size="14" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -57,18 +66,34 @@
         </div>
       </div>
     </div>
+
+    <!-- API Key Detail Modal -->
+    <ViewApiKeyModal
+      :is-open="isViewKeyModalOpen"
+      :key-data="viewingKeyData"
+      @close="isViewKeyModalOpen = false"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { Plus, Copy, Trash2 } from 'lucide-vue-next';
+import { ref, watch, onMounted } from 'vue';
+import { Plus, Copy, Trash2, Key } from 'lucide-vue-next';
 import { useLiteDB } from '../composables/useLiteDB.js';
+import ViewApiKeyModal from './ViewApiKeyModal.vue';
 
 const { apiRequest, showToast, showConfirm, openCreateApiKey, isCreateApiKeyOpen } = useLiteDB();
 
 const keys = ref([]);
 const loading = ref(false);
+
+const isViewKeyModalOpen = ref(false);
+const viewingKeyData = ref(null);
+
+const openViewKeyModal = (key) => {
+  viewingKeyData.value = key;
+  isViewKeyModalOpen.value = true;
+};
 
 const loadKeys = async () => {
   loading.value = true;
@@ -133,24 +158,83 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.key-token {
+.btn-view-doc {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
   font-size: 0.8rem;
-  color: #38bdf8;
-  font-family: var(--font-mono);
-  font-weight: 600;
-  background: rgba(56, 189, 248, 0.12);
-  border: 1px solid rgba(56, 189, 248, 0.25);
-  padding: 3px 8px;
-  border-radius: 4px;
-  display: inline-block;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
 }
 
-.mr-1 {
-  margin-right: 4px;
+.btn-view-doc span {
+  white-space: nowrap;
+}
+
+.btn-view-doc:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: rgba(2, 132, 199, 0.08);
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.15);
+  transform: translateY(-1px);
+}
+
+.icon-eye {
+  color: var(--color-primary);
+}
+
+.actions-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.btn-icon-action {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-input);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.btn-copy-action:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  background: rgba(2, 132, 199, 0.12);
+  transform: translateY(-1px);
+}
+
+.btn-delete-action {
+  color: var(--color-danger);
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.btn-delete-action:hover {
+  color: #ffffff;
+  border-color: var(--color-danger);
+  background: var(--color-danger);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
 }
 
 .table-responsive {
   width: 100%;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 </style>
