@@ -1,0 +1,13 @@
+{
+  "name": "@litedb-examples/desktop-quickstart",
+  "version": "1.0.0",
+  "description": "Desktop / local script quickstart example using LiteDB embedded mode",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@litedb/client": "^1.0.0"
+  },
+  "scripts": {
+    "start": "node index.js"
+  }
+}

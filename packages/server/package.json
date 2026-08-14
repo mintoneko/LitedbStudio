@@ -1,0 +1,19 @@
+{
+  "name": "@litedb/server",
+  "version": "1.0.0",
+  "description": "Ultra-lightweight HTTP & REST server for LiteDB",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "litedb-server": "src/cli.js"
+  },
+  "dependencies": {
+    "@litedb/core": "^1.0.0"
+  },
+  "scripts": {
+    "start": "node src/cli.js",
+    "test": "node --test test/*.test.js"
+  },
+  "keywords": ["litedb", "server", "rest-api"],
+  "license": "MIT"
+}

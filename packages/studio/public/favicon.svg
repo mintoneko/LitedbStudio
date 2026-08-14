@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+    <linearGradient id="glowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#ffffff" />
+    </linearGradient>
+    <filter id="dropShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <!-- Background Card -->
+  <rect width="64" height="64" rx="14" fill="#0b1120" />
+  <rect x="2" y="2" width="60" height="60" rx="12" fill="url(#bgGrad)" fill-opacity="0.12" stroke="#1e293b" stroke-width="2" />
+
+  <!-- Database Cylinders -->
+  <g filter="url(#dropShadow)" transform="translate(14, 14)">
+    <!-- Top Ellipse -->
+    <ellipse cx="18" cy="8" rx="15" ry="5.5" fill="url(#bgGrad)" />
+    <ellipse cx="18" cy="8" rx="15" ry="5.5" fill="none" stroke="url(#glowGrad)" stroke-width="1.8" />
+    
+    <!-- Middle Cylinder Body -->
+    <path d="M3 8v10c0 3.038 6.716 5.5 15 5.5s15-2.462 15-5.5V8" fill="none" stroke="url(#glowGrad)" stroke-width="1.8" stroke-linejoin="round" />
+    
+    <!-- Bottom Cylinder Body -->
+    <path d="M3 18v10c0 3.038 6.716 5.5 15 5.5s15-2.462 15-5.5V18" fill="none" stroke="url(#glowGrad)" stroke-width="1.8" stroke-linejoin="round" />
+
+    <!-- Lightning Spark Accent -->
+    <path d="M20 12l-4 8h5l-3 8 7-9h-5l3-7z" fill="#ffffff" opacity="0.9" />
+  </g>
+</svg>

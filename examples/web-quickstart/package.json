@@ -1,0 +1,10 @@
+{
+  "name": "@litedb-examples/web-quickstart",
+  "version": "1.0.0",
+  "description": "Frontend quickstart example using LiteDB",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@litedb/client": "^1.0.0"
+  }
+}

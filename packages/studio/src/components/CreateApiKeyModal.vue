@@ -1,0 +1,353 @@
+<template>
+  <div v-if="isCreateApiKeyOpen" class="modal-overlay" @click.self="close">
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <div class="modal-header flex-between">
+        <div class="flex-center gap-2">
+          <div class="modal-icon-badge">
+            <KeyRound :size="18" />
+          </div>
+          <h3>新建 API 访问密钥</h3>
+        </div>
+        <button class="btn-close" aria-label="关闭" @click="close">&times;</button>
+      </div>
+
+      <form @submit.prevent="handleCreate">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="key-name-input">
+              密钥名称 / 用途说明
+              <span class="required-star">*</span>
+            </label>
+            <input
+              id="key-name-input"
+              ref="inputRef"
+              v-model="keyName"
+              type="text"
+              class="form-input"
+              placeholder="例如: 我的 Vue 前端应用 / 移动端 App"
+              autocomplete="off"
+              :disabled="submitting"
+              @input="errorMessage = ''"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>权限级别 (Permission Role)</label>
+            <div class="role-selector-grid">
+              <label
+                :class="['role-card', selectedRole === 'read-write' ? 'selected' : '']"
+                @click="selectedRole = 'read-write'"
+              >
+                <input
+                  v-model="selectedRole"
+                  type="radio"
+                  name="role"
+                  value="read-write"
+                  class="sr-only"
+                />
+                <div class="role-card-header flex-between">
+                  <span class="role-title">读写权限 (read-write)</span>
+                  <span class="badge badge-success">推荐</span>
+                </div>
+                <p class="role-desc">允许对数据集合进行查询、新增、修改与删除文档。</p>
+              </label>
+
+              <label
+                :class="['role-card', selectedRole === 'read-only' ? 'selected' : '']"
+                @click="selectedRole = 'read-only'"
+              >
+                <input
+                  v-model="selectedRole"
+                  type="radio"
+                  name="role"
+                  value="read-only"
+                  class="sr-only"
+                />
+                <div class="role-card-header flex-between">
+                  <span class="role-title">只读权限 (read-only)</span>
+                </div>
+                <p class="role-desc">仅允许查询和读取集合数据，禁止任何写操作与数据修改。</p>
+              </label>
+
+              <label
+                :class="['role-card', selectedRole === 'admin' ? 'selected' : '']"
+                @click="selectedRole = 'admin'"
+              >
+                <input
+                  v-model="selectedRole"
+                  type="radio"
+                  name="role"
+                  value="admin"
+                  class="sr-only"
+                />
+                <div class="role-card-header flex-between">
+                  <span class="role-title">超级管理 (admin)</span>
+                  <span class="badge badge-primary">最高权限</span>
+                </div>
+                <p class="role-desc">拥有全部权限，包括集合创建与删除、API 密钥管理及 SQL 执行。</p>
+              </label>
+            </div>
+          </div>
+
+          <div v-if="errorMessage" class="error-banner">
+            {{ errorMessage }}
+          </div>
+        </div>
+
+        <div class="modal-footer flex-end gap-2">
+          <button type="button" class="btn btn-ghost" :disabled="submitting" @click="close">
+            取消
+          </button>
+          <button type="submit" class="btn btn-primary" :disabled="submitting">
+            <span v-if="submitting" class="loading-spinner"></span>
+            <span>{{ submitting ? '创建中...' : '创建密钥' }}</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
+import { KeyRound } from 'lucide-vue-next';
+import { useLiteDB } from '../composables/useLiteDB.js';
+
+const emit = defineEmits(['created']);
+const {
+  isCreateApiKeyOpen,
+  closeCreateApiKey,
+  apiRequest,
+  showToast
+} = useLiteDB();
+
+const inputRef = ref(null);
+const keyName = ref('');
+const selectedRole = ref('read-write');
+const errorMessage = ref('');
+const submitting = ref(false);
+
+watch(isCreateApiKeyOpen, (open) => {
+  if (open) {
+    keyName.value = '';
+    selectedRole.value = 'read-write';
+    errorMessage.value = '';
+    submitting.value = false;
+    nextTick(() => {
+      inputRef.value?.focus();
+    });
+  }
+});
+
+const close = () => {
+  if (submitting.value) return;
+  closeCreateApiKey();
+};
+
+const handleCreate = async () => {
+  const name = keyName.value.trim();
+  if (!name) {
+    errorMessage.value = '请输入密钥名称或用途说明';
+    inputRef.value?.focus();
+    return;
+  }
+
+  submitting.value = true;
+  errorMessage.value = '';
+
+  try {
+    const res = await apiRequest('/api/auth/keys', {
+      method: 'POST',
+      body: {
+        name,
+        role: selectedRole.value
+      }
+    });
+
+    showToast(`密钥 "${res.name}" 创建成功!`, 'success');
+    emit('created', res);
+    closeCreateApiKey();
+  } catch (err) {
+    errorMessage.value = `创建失败: ${err.message}`;
+  } finally {
+    submitting.value = false;
+  }
+};
+
+const handleKeydown = (e) => {
+  if (!isCreateApiKeyOpen.value) return;
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    close();
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown);
+});
+</script>
+
+<style scoped>
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  animation: fadeIn 0.15s ease;
+}
+
+.modal-card {
+  background: var(--bg-modal);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 520px;
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  animation: modalScale 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalScale {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-header {
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.modal-header h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.modal-icon-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(2, 132, 199, 0.15);
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-body {
+  padding: 22px;
+}
+
+.required-star {
+  color: var(--color-danger);
+  margin-left: 2px;
+}
+
+.role-selector-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.role-card {
+  display: block;
+  padding: 12px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.role-card:hover {
+  border-color: rgba(56, 189, 248, 0.4);
+  background: var(--table-hover-bg);
+}
+
+.role-card.selected {
+  border-color: #38bdf8;
+  background: rgba(2, 132, 199, 0.1);
+}
+
+.role-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.role-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.error-banner {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  margin-top: 14px;
+}
+
+.modal-footer {
+  padding: 14px 22px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-modal-footer);
+}
+
+.btn-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.btn-close:hover {
+  color: var(--text-main);
+}
+
+.loading-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>

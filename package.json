@@ -1,0 +1,30 @@
+{
+  "name": "litedb-monorepo",
+  "version": "1.0.0",
+  "description": "Ultra-lightweight embedded and client-server database solution for web and desktop applications",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
+  "bin": {
+    "litedb": "./bin/litedb.js"
+  },
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "node --test packages/core/test/*.test.js",
+    "start": "node packages/server/dist/index.js",
+    "dev:server": "node --watch packages/server/src/index.js",
+    "dev:studio": "npm --workspace=packages/studio run dev"
+  },
+  "keywords": [
+    "sqlite",
+    "litedb",
+    "lightweight-database",
+    "nosql",
+    "document-store"
+  ],
+  "author": "",
+  "license": "MIT"
+}

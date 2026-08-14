@@ -1,0 +1,22 @@
+{
+  "name": "@litedb/client",
+  "version": "1.0.0",
+  "description": "Universal LiteDB client SDK for web browsers, Node.js, and desktop apps",
+  "type": "module",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js"
+    }
+  },
+  "dependencies": {
+    "@litedb/core": "^1.0.0"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "keywords": ["litedb", "client", "sdk", "database", "sqlite"],
+  "license": "MIT"
+}

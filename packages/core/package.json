@@ -1,0 +1,19 @@
+{
+  "name": "@litedb/core",
+  "version": "1.0.0",
+  "description": "Core storage and query engine for LiteDB",
+  "type": "module",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js"
+    }
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "keywords": ["litedb", "sqlite", "document-store", "nosql"],
+  "license": "MIT"
+}

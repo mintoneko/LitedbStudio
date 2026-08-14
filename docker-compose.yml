@@ -1,0 +1,14 @@
+services:
+  litedb:
+    build: .
+    container_name: litedb-server
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - LITEDB_PORT=3000
+      - LITEDB_HOST=0.0.0.0
+      - LITEDB_PATH=/data/litedb.db
+      - LITEDB_ADMIN_KEY=my_secure_admin_key_123456
+    volumes:
+      - ./data:/data
