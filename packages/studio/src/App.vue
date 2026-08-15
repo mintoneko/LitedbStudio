@@ -242,7 +242,7 @@ const parseRouteFromHash = () => {
 
   const parts = hash.split('/');
   const tab = validTabs.includes(parts[0]) ? parts[0] : 'dashboard';
-  const collection = parts[1] || localStorage.getItem('litedb_last_collection') || '';
+  const collection = parts[1] ? decodeURIComponent(parts[1]) : '';
   return { tab, collection };
 };
 
@@ -261,6 +261,8 @@ const updateUrlHash = (tab, col = '') => {
   localStorage.setItem('litedb_last_tab', tab);
   if (col) {
     localStorage.setItem('litedb_last_collection', col);
+  } else {
+    localStorage.removeItem('litedb_last_collection');
   }
 };
 
@@ -276,8 +278,8 @@ const openSettings = () => {
 };
 
 const handleSelectCollection = (colName) => {
-  targetCollection.value = colName;
-  updateUrlHash('collections', colName);
+  targetCollection.value = colName || '';
+  updateUrlHash('collections', colName || '');
 };
 
 const handleGotoCollection = (colName) => {
@@ -295,9 +297,7 @@ const handleCollectionCreated = (colName) => {
 const syncFromHash = () => {
   const { tab, collection } = parseRouteFromHash();
   currentTab.value = tab;
-  if (collection) {
-    targetCollection.value = collection;
-  }
+  targetCollection.value = collection || '';
 };
 
 const headings = {

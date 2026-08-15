@@ -38,18 +38,19 @@
       <!-- Top Toolbar -->
       <div class="data-toolbar flex-between">
         <div class="toolbar-left flex-center gap-2">
-          <div class="current-collection-tag">{{ activeCollection || '请选择集合' }}</div>
+          <div v-if="activeCollection" class="current-collection-tag">{{ activeCollection }}</div>
           <div class="search-box">
             <Search :size="14" class="text-muted" />
             <input
               v-model="filterInput"
               type="text"
+              :disabled="!activeCollection"
               placeholder="输入 JSON 过滤条件"
               @keydown.enter="executeQuery"
             />
           </div>
-          <button class="btn btn-secondary btn-sm" @click="executeQuery">查询</button>
-          <button class="btn btn-ghost btn-sm" @click="resetQuery">重置</button>
+          <button class="btn btn-secondary btn-sm" :disabled="!activeCollection" @click="executeQuery">查询</button>
+          <button class="btn btn-ghost btn-sm" :disabled="!activeCollection" @click="resetQuery">重置</button>
         </div>
 
         <div class="toolbar-right flex-center gap-2">
@@ -96,8 +97,8 @@
             <tr v-if="loading">
               <td colspan="5" class="text-center py-8 text-muted">加载数据中...</td>
             </tr>
-            <tr v-else-if="!activeCollection">
-              <td colspan="5" class="text-center py-8 text-muted">请从左侧选择一个集合</td>
+            <tr v-else-if="!activeCollection || collections.length === 0">
+              <td colspan="5" class="text-center py-8 text-muted">暂无选中集合，请在左侧新建或选择集合</td>
             </tr>
             <tr v-else-if="records.length === 0">
               <td colspan="5" class="text-center py-8 text-muted">当前集合暂无匹配文档记录</td>
@@ -236,17 +237,35 @@ const editingDocId = ref('');
 const editingDocData = ref(null);
 
 watch(() => props.initialCollection, (newVal) => {
-  if (newVal && newVal !== activeCollection.value) {
-    activeCollection.value = newVal;
+  const target = newVal || '';
+  if (target !== activeCollection.value) {
+    activeCollection.value = target;
     currentPage.value = 1;
-    loadData();
+    if (activeCollection.value) {
+      loadData();
+    } else {
+      records.value = [];
+      totalRecords.value = 0;
+    }
   }
 });
 
 watch(collections, (newCols) => {
-  if (newCols.length > 0 && !activeCollection.value) {
+  if (!newCols || newCols.length === 0) {
+    if (activeCollection.value !== '') {
+      activeCollection.value = '';
+      records.value = [];
+      totalRecords.value = 0;
+      emit('select-collection', '');
+    }
+    return;
+  }
+
+  // If activeCollection is empty or does not exist in the new collections list
+  if (!activeCollection.value || !newCols.some(c => c.name === activeCollection.value)) {
     activeCollection.value = newCols[0].name;
     emit('select-collection', activeCollection.value);
+    currentPage.value = 1;
     loadData();
   }
 }, { immediate: true });
@@ -362,15 +381,13 @@ const dropCollectionByName = async (colName) => {
     await apiRequest(`/api/collections/${target}`, { method: 'DELETE' });
     showToast(`集合 ${target} 已删除`, 'success');
     await refreshCollections();
-    if (activeCollection.value === target) {
-      if (collections.value.length > 0) {
-        selectCollection(collections.value[0].name);
-      } else {
-        activeCollection.value = '';
-        records.value = [];
-        totalRecords.value = 0;
-        emit('select-collection', '');
-      }
+    if (!collections.value || collections.value.length === 0) {
+      activeCollection.value = '';
+      records.value = [];
+      totalRecords.value = 0;
+      emit('select-collection', '');
+    } else if (activeCollection.value === target) {
+      selectCollection(collections.value[0].name);
     }
   } catch (err) {
     showToast(`删除失败: ${err.message}`, 'error');
