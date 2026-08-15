@@ -14,7 +14,7 @@
           class="brand"
           role="button"
           tabindex="0"
-          title="返回概览与监控 (#/dashboard)"
+          title="返回主页"
           @click="switchTab('dashboard')"
           @keydown.enter="switchTab('dashboard')"
         >
