@@ -23,7 +23,6 @@
             <span class="collection-count-badge">{{ c.count }}</span>
             <button
               class="btn-nav-delete"
-              title="删除该集合"
               @click.stop="dropCollectionByName(c.name)"
             >
               <Trash2 :size="12" />
@@ -56,7 +55,6 @@
         <div class="toolbar-right flex-center gap-2">
           <button
             class="btn-icon-action btn-add-action"
-            title="添加文档"
             :disabled="!activeCollection"
             @click="openAddModal"
           >
@@ -64,7 +62,6 @@
           </button>
           <button
             class="btn-icon-action btn-clear-action"
-            title="清空集合数据"
             :disabled="!activeCollection"
             @click="clearCollection"
           >
@@ -72,7 +69,6 @@
           </button>
           <button
             class="btn-icon-action btn-delete-action"
-            title="删除集合"
             :disabled="!activeCollection"
             @click="dropCollectionByName(activeCollection)"
           >
@@ -109,7 +105,7 @@
                 <span v-if="isNumericId(doc.id)" class="numeric-id-badge">
                   #{{ doc.id }}
                 </span>
-                <code v-else class="string-id-badge" :title="String(doc.id)">
+                <code v-else class="string-id-badge">
                   {{ doc.id }}
                 </code>
               </td>
@@ -118,7 +114,6 @@
               <td style="white-space: nowrap;">
                 <button
                   class="btn-view-doc"
-                  title="查看文档详情"
                   @click="openViewModal(doc)"
                 >
                   <Eye :size="14" class="icon-eye" />
@@ -133,13 +128,13 @@
               <!-- Actions -->
               <td class="text-right" style="white-space: nowrap;">
                 <div class="actions-group flex-end gap-2">
-                  <button class="btn-icon-action btn-copy-action" title="复制完整 JSON" @click="copyDocJson(doc)">
+                  <button class="btn-icon-action btn-copy-action" @click="copyDocJson(doc)">
                     <Copy :size="14" />
                   </button>
-                  <button class="btn-icon-action btn-edit-action" title="编辑文档" @click="openEditModal(doc)">
+                  <button class="btn-icon-action btn-edit-action" @click="openEditModal(doc)">
                     <Edit3 :size="14" />
                   </button>
-                  <button class="btn-icon-action btn-delete-action" title="删除文档" @click="deleteDoc(doc.id)">
+                  <button class="btn-icon-action btn-delete-action" @click="deleteDoc(doc.id)">
                     <Trash2 :size="14" />
                   </button>
                 </div>

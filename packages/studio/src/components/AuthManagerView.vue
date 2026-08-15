@@ -36,7 +36,6 @@
                 <td style="white-space: nowrap;">
                   <button
                     class="btn-view-doc"
-                    title="查看 API 密钥详情"
                     @click="openViewKeyModal(k)"
                   >
                     <Key :size="14" class="icon-eye" />
@@ -52,10 +51,10 @@
                 <td class="text-dim text-xs">{{ k.last_used_at ? formatDate(k.last_used_at) : '从未使用' }}</td>
                 <td class="text-right" style="white-space: nowrap;">
                   <div class="actions-group flex-end gap-2">
-                    <button class="btn-icon-action btn-copy-action" title="复制 API 密钥" @click="copyKey(k.key)">
+                    <button class="btn-icon-action btn-copy-action" @click="copyKey(k.key)">
                       <Copy :size="14" />
                     </button>
-                    <button class="btn-icon-action btn-delete-action" title="删除 API 密钥" @click="deleteKey(k.id)">
+                    <button class="btn-icon-action btn-delete-action" @click="deleteKey(k.id)">
                       <Trash2 :size="14" />
                     </button>
                   </div>

@@ -136,7 +136,6 @@
                 <td class="text-right">
                   <button
                     class="btn-copy-field"
-                    title="复制该字段值"
                     @click="copyValue(val)"
                   >
                     <Copy :size="12" />
