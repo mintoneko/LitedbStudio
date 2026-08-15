@@ -110,7 +110,6 @@
           <div class="theme-segmented-switch">
             <button
               :class="['theme-segment-btn', themeMode === 'system' ? 'active' : '']"
-              title="跟随系统外观"
               @click="setThemeMode('system')"
             >
               <Monitor :size="13" />
@@ -118,7 +117,6 @@
             </button>
             <button
               :class="['theme-segment-btn', themeMode === 'light' ? 'active' : '']"
-              title="浅色明亮模式"
               @click="setThemeMode('light')"
             >
               <Sun :size="13" />
@@ -126,7 +124,6 @@
             </button>
             <button
               :class="['theme-segment-btn', themeMode === 'dark' ? 'active' : '']"
-              title="深色暗黑模式"
               @click="setThemeMode('dark')"
             >
               <Moon :size="13" />
