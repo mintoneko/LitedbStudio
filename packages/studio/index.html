@@ -8,9 +8,12 @@
   <link rel="alternate icon" type="image/svg+xml" href="./favicon.svg">
   <script>
     (function() {
-      const saved = localStorage.getItem('litedb_theme');
-      const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      document.documentElement.setAttribute('data-theme', saved || systemTheme);
+      const mode = localStorage.getItem('litedb_theme_mode') || localStorage.getItem('litedb_theme') || 'system';
+      let theme = mode;
+      if (mode === 'system') {
+        theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      document.documentElement.setAttribute('data-theme', theme);
     })();
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">

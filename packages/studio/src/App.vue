@@ -106,15 +106,33 @@
         </div>
 
         <div class="topbar-actions flex-center gap-2">
-          <!-- Theme Toggle Button -->
-          <button
-            class="btn-icon"
-            :title="theme === 'dark' ? '切换为浅色明亮模式' : '切换为纯黑暗黑模式'"
-            @click="toggleTheme"
-          >
-            <Sun v-if="theme === 'dark'" :size="16" />
-            <Moon v-else :size="16" />
-          </button>
+          <!-- 3-Segment Theme Mode Switcher -->
+          <div class="theme-segmented-switch">
+            <button
+              :class="['theme-segment-btn', themeMode === 'system' ? 'active' : '']"
+              title="跟随系统外观"
+              @click="setThemeMode('system')"
+            >
+              <Monitor :size="13" />
+              <span>系统</span>
+            </button>
+            <button
+              :class="['theme-segment-btn', themeMode === 'light' ? 'active' : '']"
+              title="浅色明亮模式"
+              @click="setThemeMode('light')"
+            >
+              <Sun :size="13" />
+              <span>浅色</span>
+            </button>
+            <button
+              :class="['theme-segment-btn', themeMode === 'dark' ? 'active' : '']"
+              title="深色暗黑模式"
+              @click="setThemeMode('dark')"
+            >
+              <Moon :size="13" />
+              <span>深色</span>
+            </button>
+          </div>
 
           <!-- Context-Aware Topbar Action Button -->
           <button
@@ -178,7 +196,8 @@ import {
   Sun,
   Moon,
   Menu,
-  X
+  X,
+  Monitor
 } from 'lucide-vue-next';
 
 import { useLiteDB } from './composables/useLiteDB.js';
@@ -194,6 +213,8 @@ import ToastNotification from './components/ToastNotification.vue';
 
 const {
   theme,
+  themeMode,
+  setThemeMode,
   toggleTheme,
   endpoint,
   isConnected,
@@ -510,6 +531,56 @@ onUnmounted(() => {
 
 .topbar-actions {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 3-Segment Theme Switcher */
+.theme-segmented-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  user-select: none;
+}
+
+.theme-segment-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius-sm) - 2px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.theme-segment-btn:hover:not(.active) {
+  color: var(--text-main);
+  background: var(--table-hover-bg);
+}
+
+.theme-segment-btn.active {
+  background: var(--bg-card);
+  border-color: var(--border-subtle);
+  color: var(--text-main);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme='light'] .theme-segment-btn.active {
+  background: #ffffff;
+  color: var(--color-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
 .tab-view-container {

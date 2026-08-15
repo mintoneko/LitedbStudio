@@ -32,20 +32,29 @@ const confirmState = ref({
   resolve: null
 });
 
-// Initialize Theme: Default to System Preference if not manually set
-const savedTheme = localStorage.getItem('litedb_theme');
-const initialTheme = savedTheme || getSystemTheme();
-const theme = ref(initialTheme);
-document.documentElement.setAttribute('data-theme', initialTheme);
+// Initialize Theme Mode: 'system' | 'light' | 'dark'
+const savedThemeMode = localStorage.getItem('litedb_theme_mode') || localStorage.getItem('litedb_theme') || 'system';
+const themeMode = ref(savedThemeMode);
+const theme = ref(savedThemeMode === 'system' ? getSystemTheme() : savedThemeMode);
+
+function applyTheme(mode) {
+  let activeTheme = mode;
+  if (mode === 'system') {
+    activeTheme = getSystemTheme();
+  }
+  theme.value = activeTheme;
+  document.documentElement.setAttribute('data-theme', activeTheme);
+}
+
+// Initial apply
+applyTheme(themeMode.value);
 
 // Listen to OS system color scheme changes dynamically
 if (typeof window !== 'undefined' && window.matchMedia) {
   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-  mediaQuery.addEventListener('change', (e) => {
-    if (!localStorage.getItem('litedb_theme')) {
-      const newSysTheme = e.matches ? 'dark' : 'light';
-      theme.value = newSysTheme;
-      document.documentElement.setAttribute('data-theme', newSysTheme);
+  mediaQuery.addEventListener('change', () => {
+    if (themeMode.value === 'system') {
+      applyTheme('system');
     }
   });
 }
@@ -65,10 +74,16 @@ const collections = ref([]);
 const toasts = ref([]);
 
 export function useLiteDB() {
+  const setThemeMode = (mode) => {
+    themeMode.value = mode;
+    localStorage.setItem('litedb_theme_mode', mode);
+    localStorage.setItem('litedb_theme', mode);
+    applyTheme(mode);
+  };
+
   const toggleTheme = () => {
-    theme.value = theme.value === 'dark' ? 'light' : 'dark';
-    localStorage.setItem('litedb_theme', theme.value);
-    document.documentElement.setAttribute('data-theme', theme.value);
+    const nextMode = themeMode.value === 'dark' ? 'light' : themeMode.value === 'light' ? 'system' : 'dark';
+    setThemeMode(nextMode);
   };
 
   const showToast = (message, type = 'info') => {
@@ -204,6 +219,8 @@ export function useLiteDB() {
 
   return {
     theme,
+    themeMode,
+    setThemeMode,
     toggleTheme,
     endpoint,
     apiKey,
