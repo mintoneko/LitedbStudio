@@ -4,7 +4,7 @@
     <div class="collection-sidebar">
       <div class="collection-sidebar-header flex-between">
         <h4>集合清单</h4>
-        <button class="btn btn-xs btn-primary" @click="promptCreateCollection">
+        <button v-if="isAdmin" class="btn btn-xs btn-primary" @click="promptCreateCollection">
           <Plus :size="12" /> 新建
         </button>
       </div>
@@ -22,6 +22,7 @@
           <div class="collection-nav-right flex-center gap-1">
             <span class="collection-count-badge">{{ c.count }}</span>
             <button
+              v-if="isAdmin"
               class="btn-nav-delete"
               :aria-label="`删除集合 ${c.name}`"
               @click.stop="dropCollectionByName(c.name)"
@@ -55,6 +56,7 @@
 
         <div class="toolbar-right flex-center gap-2">
           <button
+            v-if="isWrite"
             class="btn-icon-action btn-add-action"
             aria-label="添加文档"
             :disabled="!activeCollection"
@@ -63,6 +65,7 @@
             <Plus :size="16" />
           </button>
           <button
+            v-if="isAdmin"
             class="btn-icon-action btn-clear-action"
             aria-label="清空当前集合"
             :disabled="!activeCollection"
@@ -71,6 +74,7 @@
             <Eraser :size="16" />
           </button>
           <button
+            v-if="isAdmin"
             class="btn-icon-action btn-delete-action"
             aria-label="删除当前集合"
             :disabled="!activeCollection"
@@ -144,6 +148,7 @@
                     <Copy :size="14" />
                   </button>
                   <button
+                    v-if="isWrite"
                     class="btn-icon-action btn-edit-action"
                     aria-label="编辑文档"
                     @click="openEditModal(doc)"
@@ -151,6 +156,7 @@
                     <Edit3 :size="14" />
                   </button>
                   <button
+                    v-if="isWrite"
                     class="btn-icon-action btn-delete-action"
                     aria-label="删除文档"
                     @click="deleteDoc(doc.id)"
@@ -231,7 +237,10 @@ const {
   refreshCollections,
   showToast,
   showConfirm,
-  openCreateCollection
+  openCreateCollection,
+  isAdmin,
+  isWrite,
+  isReadOnly
 } = useLiteDB();
 
 const activeCollection = ref(props.initialCollection || '');

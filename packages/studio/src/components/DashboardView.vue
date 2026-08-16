@@ -85,7 +85,7 @@
               </tr>
               <tr v-else-if="collections.length === 0">
                 <td colspan="5" class="text-center py-6 text-muted">
-                  {{ isConnecting ? '正在同步集合数据...' : '暂无任何集合，点击右上角「新建集合」开启' }}
+                  {{ isConnecting ? '正在同步集合数据...' : (isAdmin ? '暂无任何集合，点击右上角「新建集合」开启' : '暂无任何集合') }}
                 </td>
               </tr>
               <tr v-for="c in collections" :key="c.name">
@@ -124,6 +124,7 @@ const {
   isConnecting,
   isSettingsOpen,
   apiKey,
+  isAdmin,
   refreshStats,
   refreshCollections,
   showToast

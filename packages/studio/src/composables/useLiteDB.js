@@ -1,4 +1,4 @@
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 
 // System Theme Detector
 function getSystemTheme() {
@@ -8,6 +8,24 @@ function getSystemTheme() {
   return 'dark';
 }
 
+function formatErrorMessage(msg) {
+  if (!msg) return '操作失败，请重试';
+  if (typeof msg !== 'string') return String(msg);
+  if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
+    return '无法连接到 LiteDB 服务器，请检查网络或服务运行状态';
+  }
+  if (msg.includes('Forbidden') || msg.includes('Requires')) {
+    return msg
+      .replace(/Forbidden:\s*Requires\s*'([^']+)'\s*role\s*\(current:\s*'([^']+)'\)/i, '权限不足：该操作需要 "$1" 管理员权限（当前身份为 "$2"）')
+      .replace(/Requires\s*'admin'/i, '需要超级管理员 (admin) 权限')
+      .replace(/Requires\s*'write'/i, '需要读写 (write) 权限');
+  }
+  if (msg.includes('Unauthorized') || msg.includes('Invalid API Key') || msg.includes('API Key required')) {
+    return '未授权：API 密钥无效或未提供，请在连接设置中配置';
+  }
+  return msg;
+}
+
 // Global singleton reactive state
 const endpoint = ref(localStorage.getItem('litedb_endpoint') || window.location.origin);
 if (endpoint.value.startsWith('null') || endpoint.value.startsWith('file:')) {
@@ -15,6 +33,11 @@ if (endpoint.value.startsWith('null') || endpoint.value.startsWith('file:')) {
 }
 
 const apiKey = ref(localStorage.getItem('litedb_apikey') || '');
+const currentRole = ref(localStorage.getItem('litedb_user_role') || 'admin');
+const isAdmin = computed(() => currentRole.value === 'admin');
+const isWrite = computed(() => currentRole.value === 'admin' || currentRole.value === 'write' || currentRole.value === 'read-write');
+const isReadOnly = computed(() => currentRole.value === 'read' || currentRole.value === 'read-only');
+
 const isConnected = ref(Boolean(apiKey.value));
 const isConnecting = ref(false);
 const isSettingsOpen = ref(false);
@@ -109,10 +132,10 @@ export function useLiteDB() {
 
   const showToast = (message, type = 'info') => {
     const id = Date.now() + Math.random();
-    toasts.value.push({ id, message, type });
+    toasts.value.push({ id, message: formatErrorMessage(message), type });
     setTimeout(() => {
       toasts.value = toasts.value.filter(t => t.id !== id);
-    }, 3200);
+    }, 3500);
   };
 
   const showConfirm = ({
@@ -183,7 +206,15 @@ export function useLiteDB() {
 
       const json = await res.json().catch(() => ({}));
       if (!res.ok || json.success === false) {
-        const msg = json.error?.message || `HTTP ${res.status} 请求失败`;
+        let msg = json.error?.message;
+        if (!msg) {
+          if (res.status === 401) msg = '未授权：API 密钥无效或未提供';
+          else if (res.status === 403) msg = '权限不足：当前角色无权执行此操作';
+          else if (res.status === 404) msg = '请求的资源或集合不存在';
+          else if (res.status === 500) msg = '服务器处理异常';
+          else msg = `请求失败 (HTTP ${res.status})`;
+        }
+        msg = formatErrorMessage(msg);
         const err = new Error(msg);
         err.status = res.status;
         throw err;
@@ -205,8 +236,14 @@ export function useLiteDB() {
     }
 
     try {
-      await apiRequest('/api/auth/verify');
+      const verifyRes = await apiRequest('/api/auth/verify');
       isConnected.value = true;
+      if (verifyRes && verifyRes.role) {
+        currentRole.value = verifyRes.role;
+        try {
+          localStorage.setItem('litedb_user_role', verifyRes.role);
+        } catch {}
+      }
       await refreshStats();
       await refreshCollections();
       return true;
@@ -251,6 +288,10 @@ export function useLiteDB() {
     toggleTheme,
     endpoint,
     apiKey,
+    currentRole,
+    isAdmin,
+    isWrite,
+    isReadOnly,
     isConnected,
     isConnecting,
     isSettingsOpen,

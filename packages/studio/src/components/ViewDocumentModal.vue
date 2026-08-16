@@ -155,7 +155,7 @@
       <!-- Modal Footer -->
       <div class="modal-footer flex-end gap-2">
         <button class="btn btn-ghost" @click="close">关闭</button>
-        <button class="btn btn-primary" @click="onEdit">
+        <button v-if="isWrite" class="btn btn-primary" @click="onEdit">
           <Edit3 :size="14" />
           <span>编辑文档</span>
         </button>
@@ -176,7 +176,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['close', 'edit']);
-const { showToast } = useLiteDB();
+const { showToast, isWrite } = useLiteDB();
 
 const activeTab = ref('fields');
 

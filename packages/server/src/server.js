@@ -59,7 +59,7 @@ export class LiteDBServer {
       }
       const record = this.engine.validateApiKey(apiKey);
       if (!record) {
-        return this._sendError(res, 401, 'Invalid API key');
+        return this._sendError(res, 401, '无效的 API 密钥');
       }
       this._sendJson(res, 200, { success: true, data: { id: record.id, name: record.name, role: record.role } });
     };
@@ -76,7 +76,7 @@ export class LiteDBServer {
     this.router.post('/api/auth/keys', this._requireRole('admin'), (req, res) => {
       const { name, role, customKey } = req.body || {};
       if (!name) {
-        return this._sendError(res, 400, 'Key name is required');
+        return this._sendError(res, 400, '密钥名称不能为空');
       }
       const newKey = this.engine.createApiKey(name, role || 'write', customKey);
       this._sendJson(res, 201, { success: true, data: newKey });
@@ -95,7 +95,7 @@ export class LiteDBServer {
 
     this.router.post('/api/collections', this._requireRole('admin'), (req, res) => {
       const { name } = req.body || {};
-      if (!name) return this._sendError(res, 400, 'Collection name required');
+      if (!name) return this._sendError(res, 400, '集合名称不能为空');
       const col = this.engine.collection(name);
       this._sendJson(res, 201, { success: true, data: { name: col.name } });
     });
@@ -162,12 +162,12 @@ export class LiteDBServer {
     // Find by ID
     this.router.get('/api/collections/:name/:id', this._requireRole('read'), (req, res) => {
       if (!this.engine.hasCollection(req.params.name)) {
-        return this._sendError(res, 404, 'Collection not found');
+        return this._sendError(res, 404, '集合不存在');
       }
       const col = this.engine.collection(req.params.name);
       const doc = col.findById(req.params.id);
       if (!doc) {
-        return this._sendError(res, 404, 'Document not found');
+        return this._sendError(res, 404, '文档记录不存在');
       }
       this._sendJson(res, 200, { success: true, data: doc });
     });
@@ -175,13 +175,13 @@ export class LiteDBServer {
     // Update by ID (Partial patch)
     this.router.put('/api/collections/:name/:id', this._requireRole('write'), (req, res) => {
       if (!this.engine.hasCollection(req.params.name)) {
-        return this._sendError(res, 404, 'Collection not found');
+        return this._sendError(res, 404, '集合不存在');
       }
       const col = this.engine.collection(req.params.name);
       const patch = req.body || {};
       const updated = col.updateById(req.params.id, patch);
       if (!updated) {
-        return this._sendError(res, 404, 'Document not found');
+        return this._sendError(res, 404, '文档记录不存在');
       }
       this._sendJson(res, 200, { success: true, data: updated });
     });
@@ -203,12 +203,12 @@ export class LiteDBServer {
     // Delete by ID
     this.router.delete('/api/collections/:name/:id', this._requireRole('write'), (req, res) => {
       if (!this.engine.hasCollection(req.params.name)) {
-        return this._sendError(res, 404, 'Collection not found');
+        return this._sendError(res, 404, '集合不存在');
       }
       const col = this.engine.collection(req.params.name);
       const deleted = col.deleteById(req.params.id);
       if (!deleted) {
-        return this._sendError(res, 404, 'Document not found');
+        return this._sendError(res, 404, '文档记录不存在');
       }
       this._sendJson(res, 200, { success: true, message: 'Document deleted' });
     });
@@ -291,19 +291,19 @@ export class LiteDBServer {
 
       const apiKey = this._extractApiKey(req);
       if (!apiKey) {
-        return this._sendError(res, 401, 'Unauthorized: API Key required');
+        return this._sendError(res, 401, '未授权：缺少 API 密钥');
       }
 
       const record = this.engine.validateApiKey(apiKey);
       if (!record) {
-        return this._sendError(res, 401, 'Unauthorized: Invalid API Key');
+        return this._sendError(res, 401, '未授权：无效的 API 密钥');
       }
 
       const userRank = roleRank[record.role] || 0;
       const requiredRank = roleRank[minRole] || 1;
 
       if (userRank < requiredRank) {
-        return this._sendError(res, 403, `Forbidden: Requires '${minRole}' role (current: '${record.role}')`);
+        return this._sendError(res, 403, `权限不足：此操作需要 '${minRole}' 管理员权限（当前身份为 '${record.role}'）`);
       }
 
       req.auth = record;

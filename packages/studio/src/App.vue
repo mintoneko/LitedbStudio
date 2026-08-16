@@ -54,6 +54,7 @@
         </button>
 
         <button
+          v-if="isAdmin"
           :class="['nav-item', currentTab === 'auth' ? 'active' : '']"
           @click="switchTab('auth')"
         >
@@ -62,6 +63,7 @@
         </button>
 
         <button
+          v-if="isAdmin"
           :class="['nav-item', currentTab === 'backup' ? 'active' : '']"
           @click="switchTab('backup')"
         >
@@ -133,9 +135,9 @@
             </button>
           </div>
 
-          <!-- Context-Aware Topbar Action Button -->
+          <!-- Context-Aware Topbar Action Button (Only Admin can create collections) -->
           <button
-            v-if="currentTab === 'collections' || currentTab === 'dashboard'"
+            v-if="isAdmin && (currentTab === 'collections' || currentTab === 'dashboard')"
             class="btn btn-primary"
             @click="openCreateCollection"
           >
@@ -174,7 +176,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import {
   Database,
   LayoutGrid,
@@ -210,7 +212,11 @@ const {
   isConnected,
   isSettingsOpen,
   openCreateCollection,
-  checkConnection
+  checkConnection,
+  isAdmin,
+  isWrite,
+  isReadOnly,
+  currentRole
 } = useLiteDB();
 
 const isMobileMenuOpen = ref(false);
@@ -256,10 +262,19 @@ const updateUrlHash = (tab, col = '') => {
 };
 
 const switchTab = (tab) => {
+  if (!isAdmin.value && (tab === 'auth' || tab === 'backup')) {
+    tab = 'dashboard';
+  }
   currentTab.value = tab;
   updateUrlHash(tab, tab === 'collections' ? targetCollection.value : '');
   isMobileMenuOpen.value = false;
 };
+
+watch(isAdmin, (admin) => {
+  if (!admin && (currentTab.value === 'auth' || currentTab.value === 'backup')) {
+    switchTab('dashboard');
+  }
+});
 
 const openSettings = () => {
   isSettingsOpen.value = true;
