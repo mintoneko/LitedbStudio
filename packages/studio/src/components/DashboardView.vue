@@ -1,5 +1,24 @@
 <template>
   <div class="dashboard-view">
+    <div
+      v-if="!isConnected || isConnecting"
+      :class="['connection-banner', isConnecting ? 'connecting' : '']"
+    >
+      <div class="connection-banner-icon">
+        <Database :size="18" />
+      </div>
+      <div class="connection-banner-copy">
+        <strong>{{ isConnecting ? '正在连接 LiteDB 服务' : '尚未连接 LiteDB 服务' }}</strong>
+        <span>
+          {{ isConnecting ? '正在读取数据库状态，请稍候。' : '连接服务后才能查看集合、文档和运行指标。' }}
+        </span>
+      </div>
+      <button class="btn btn-secondary btn-sm" @click="isSettingsOpen = true">
+        <Settings :size="14" />
+        <span>连接设置</span>
+      </button>
+    </div>
+
     <!-- Stat Cards Grid -->
     <div class="stats-grid">
       <div class="stat-card">
@@ -9,8 +28,8 @@
             <Database :size="18" />
           </div>
         </div>
-        <div class="stat-value">{{ stats.fileSizeFormatted || '0 B' }}</div>
-        <div class="stat-footer">路径: {{ stats.path }}</div>
+        <div class="stat-value">{{ isConnected ? (stats.fileSizeFormatted || '0 B') : '—' }}</div>
+        <div class="stat-footer">{{ isConnected ? `路径: ${stats.path}` : '连接后显示数据库路径' }}</div>
       </div>
 
       <div class="stat-card">
@@ -20,7 +39,7 @@
             <Folder :size="18" />
           </div>
         </div>
-        <div class="stat-value">{{ stats.collectionsCount }}</div>
+        <div class="stat-value">{{ isConnected ? stats.collectionsCount : '—' }}</div>
         <div class="stat-footer">当前已注册分类</div>
       </div>
 
@@ -31,7 +50,7 @@
             <FileText :size="18" />
           </div>
         </div>
-        <div class="stat-value">{{ stats.totalDocuments }}</div>
+        <div class="stat-value">{{ isConnected ? stats.totalDocuments : '—' }}</div>
         <div class="stat-footer">总 JSON 文档记录数</div>
       </div>
 
@@ -58,9 +77,10 @@
           </button>
         </div>
       </div>
+      <div v-if="collections.length" class="table-scroll-note">可左右滑动查看完整列表</div>
       <div class="card-body no-padding">
         <div class="table-responsive">
-          <table class="data-table">
+          <table class="data-table" :class="{ 'has-collection-rows': collections.length > 0 }">
             <thead>
               <tr>
                 <th>集合名称</th>
@@ -71,7 +91,21 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="collections.length === 0">
+              <tr v-if="isConnecting">
+                <td colspan="5" class="text-center py-6 text-muted">正在读取数据库状态...</td>
+              </tr>
+              <tr v-else-if="!isConnected">
+                <td colspan="5" class="text-center py-6">
+                  <div class="empty-state-content">
+                    <strong>连接服务后显示集合</strong>
+                    <span>当前页面还没有读取到数据库数据。</span>
+                    <button class="btn btn-secondary btn-sm" @click="isSettingsOpen = true">
+                      打开连接设置
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr v-else-if="collections.length === 0">
                 <td colspan="5" class="text-center py-6 text-muted">
                   暂无任何集合，点击右上角「新建集合」开启
                 </td>
@@ -101,19 +135,34 @@
 
 <script setup>
 import { computed } from 'vue';
-import { Database, Folder, FileText, Activity, RotateCw } from 'lucide-vue-next';
+import { Database, Folder, FileText, Activity, RotateCw, Settings } from 'lucide-vue-next';
 import { useLiteDB } from '../composables/useLiteDB.js';
 
 const emit = defineEmits(['goto-collection']);
-const { stats, collections, refreshStats, refreshCollections, showToast } = useLiteDB();
+const {
+  stats,
+  collections,
+  isConnected,
+  isConnecting,
+  isSettingsOpen,
+  refreshStats,
+  refreshCollections,
+  showToast
+} = useLiteDB();
 
 const formattedRss = computed(() => {
-  if (!stats.value?.memoryUsage?.rss) return '-';
+  if (!isConnected.value || !stats.value?.memoryUsage?.rss) return '—';
   const mb = (stats.value.memoryUsage.rss / (1024 * 1024)).toFixed(1);
   return `${mb} MB`;
 });
 
 const refreshAll = async () => {
+  if (!isConnected.value) {
+    isSettingsOpen.value = true;
+    showToast('请先连接 LiteDB 服务', 'info');
+    return;
+  }
+
   await refreshStats();
   await refreshCollections();
   showToast('数据已刷新', 'success');
@@ -131,6 +180,70 @@ const formatDate = (isoStr) => {
 </script>
 
 <style scoped>
+.connection-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  background: var(--bg-card);
+  border: 1px solid rgba(2, 132, 199, 0.35);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+}
+
+.connection-banner.connecting {
+  border-left-color: var(--color-warning);
+}
+
+.connection-banner-icon {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 8px;
+  color: var(--color-primary);
+  background: rgba(2, 132, 199, 0.12);
+}
+
+.connection-banner-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.connection-banner-copy strong {
+  font-size: 0.88rem;
+  color: var(--text-main);
+}
+
+.connection-banner-copy span {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.empty-state-content {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+}
+
+.empty-state-content strong {
+  color: var(--text-main);
+  font-size: 0.86rem;
+}
+
+.empty-state-content span {
+  font-size: 0.78rem;
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -189,7 +302,7 @@ const formatDate = (isoStr) => {
 }
 
 .collection-tag {
-  color: #38bdf8;
+  color: var(--color-accent-text);
   font-family: var(--font-mono);
   font-size: 0.88rem;
   font-weight: 600;
@@ -200,7 +313,34 @@ const formatDate = (isoStr) => {
   overflow-x: auto;
 }
 
+.table-scroll-note {
+  display: none;
+}
+
 @media (max-width: 640px) {
+  .connection-banner {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .connection-banner .btn {
+    width: 100%;
+  }
+
+  .table-scroll-note {
+    display: block;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--table-header-bg);
+    color: var(--text-dim);
+    font-size: 0.7rem;
+    text-align: right;
+  }
+
+  .dashboard-view .data-table.has-collection-rows {
+    min-width: 680px;
+  }
+
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;

@@ -23,6 +23,7 @@
             <span class="collection-count-badge">{{ c.count }}</span>
             <button
               class="btn-nav-delete"
+              :aria-label="`删除集合 ${c.name}`"
               @click.stop="dropCollectionByName(c.name)"
             >
               <Trash2 :size="12" />
@@ -55,6 +56,7 @@
         <div class="toolbar-right flex-center gap-2">
           <button
             class="btn-icon-action btn-add-action"
+            aria-label="添加文档"
             :disabled="!activeCollection"
             @click="openAddModal"
           >
@@ -62,6 +64,7 @@
           </button>
           <button
             class="btn-icon-action btn-clear-action"
+            aria-label="清空当前集合"
             :disabled="!activeCollection"
             @click="clearCollection"
           >
@@ -69,6 +72,7 @@
           </button>
           <button
             class="btn-icon-action btn-delete-action"
+            aria-label="删除当前集合"
             :disabled="!activeCollection"
             @click="dropCollectionByName(activeCollection)"
           >
@@ -77,9 +81,13 @@
         </div>
       </div>
 
+      <div v-if="records.length > 0" class="table-scroll-note">
+        可左右滑动查看完整字段
+      </div>
+
       <!-- Data Table Area -->
       <div class="data-table-container">
-        <table class="data-table">
+        <table class="data-table" :class="{ 'has-records': records.length > 0 }">
           <thead>
             <tr>
               <th style="width: 90px;">ID</th>
@@ -128,13 +136,25 @@
               <!-- Actions -->
               <td class="text-right" style="white-space: nowrap;">
                 <div class="actions-group flex-end gap-2">
-                  <button class="btn-icon-action btn-copy-action" @click="copyDocJson(doc)">
+                  <button
+                    class="btn-icon-action btn-copy-action"
+                    aria-label="复制文档 JSON"
+                    @click="copyDocJson(doc)"
+                  >
                     <Copy :size="14" />
                   </button>
-                  <button class="btn-icon-action btn-edit-action" @click="openEditModal(doc)">
+                  <button
+                    class="btn-icon-action btn-edit-action"
+                    aria-label="编辑文档"
+                    @click="openEditModal(doc)"
+                  >
                     <Edit3 :size="14" />
                   </button>
-                  <button class="btn-icon-action btn-delete-action" @click="deleteDoc(doc.id)">
+                  <button
+                    class="btn-icon-action btn-delete-action"
+                    aria-label="删除文档"
+                    @click="deleteDoc(doc.id)"
+                  >
                     <Trash2 :size="14" />
                   </button>
                 </div>
@@ -667,6 +687,10 @@ onMounted(() => {
   overflow: auto;
 }
 
+.table-scroll-note {
+  display: none;
+}
+
 .data-table {
   width: 100%;
   border-collapse: collapse;
@@ -914,6 +938,20 @@ onMounted(() => {
     gap: 6px;
     border-top: 1px solid var(--border-subtle);
     padding-top: 8px;
+  }
+
+  .table-scroll-note {
+    display: block;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--table-header-bg);
+    color: var(--text-dim);
+    font-size: 0.7rem;
+    text-align: right;
+  }
+
+  .collection-data-main .data-table.has-records {
+    min-width: 680px;
   }
 
   .pagination-bar {

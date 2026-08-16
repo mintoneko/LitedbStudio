@@ -12,7 +12,7 @@
         </button>
       </div>
       <div class="card-body no-padding">
-        <div class="table-responsive">
+        <div class="table-responsive desktop-key-table">
           <table class="data-table">
             <thead>
               <tr>
@@ -51,10 +51,18 @@
                 <td class="text-dim text-xs">{{ k.last_used_at ? formatDate(k.last_used_at) : '从未使用' }}</td>
                 <td class="text-right" style="white-space: nowrap;">
                   <div class="actions-group flex-end gap-2">
-                    <button class="btn-icon-action btn-copy-action" @click="copyKey(k.key)">
+                    <button
+                      class="btn-icon-action btn-copy-action"
+                      aria-label="复制 API 密钥"
+                      @click="copyKey(k.key)"
+                    >
                       <Copy :size="14" />
                     </button>
-                    <button class="btn-icon-action btn-delete-action" @click="deleteKey(k.id)">
+                    <button
+                      class="btn-icon-action btn-delete-action"
+                      aria-label="注销 API 密钥"
+                      @click="deleteKey(k.id)"
+                    >
                       <Trash2 :size="14" />
                     </button>
                   </div>
@@ -62,6 +70,47 @@
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <div class="mobile-key-list">
+          <div v-if="loading" class="mobile-key-state text-muted">加载密钥列表中...</div>
+          <div v-else-if="keys.length === 0" class="mobile-key-state text-muted">暂无 API 密钥</div>
+          <article v-for="k in keys" :key="k.id" class="mobile-key-card">
+            <div class="mobile-key-card-header">
+              <div class="mobile-key-card-title">
+                <strong>{{ k.name }}</strong>
+                <span :class="['badge', k.role === 'admin' ? 'badge-primary' : 'badge-success']">
+                  {{ k.role }}
+                </span>
+              </div>
+              <button class="btn-view-doc" @click="openViewKeyModal(k)">
+                <Key :size="14" class="icon-eye" />
+                <span>查看密钥</span>
+              </button>
+            </div>
+
+            <dl class="mobile-key-meta">
+              <div>
+                <dt>创建时间</dt>
+                <dd>{{ formatDate(k.created_at) }}</dd>
+              </div>
+              <div>
+                <dt>最后使用</dt>
+                <dd>{{ k.last_used_at ? formatDate(k.last_used_at) : '从未使用' }}</dd>
+              </div>
+            </dl>
+
+            <div class="mobile-key-actions">
+              <button class="btn btn-secondary btn-sm" @click="copyKey(k.key)">
+                <Copy :size="14" />
+                <span>复制密钥</span>
+              </button>
+              <button class="btn btn-danger-outline btn-sm" @click="deleteKey(k.id)">
+                <Trash2 :size="14" />
+                <span>注销</span>
+              </button>
+            </div>
+          </article>
         </div>
       </div>
     </div>
@@ -235,5 +284,92 @@ onMounted(() => {
   width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+.mobile-key-list {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .desktop-key-table {
+    display: none;
+  }
+
+  .mobile-key-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .mobile-key-state {
+    padding: 24px 12px;
+    text-align: center;
+    font-size: 0.82rem;
+  }
+
+  .mobile-key-card {
+    padding: 14px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+  }
+
+  .mobile-key-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .mobile-key-card-title {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .mobile-key-card-title strong {
+    min-width: 0;
+    color: var(--text-main);
+    font-size: 0.88rem;
+    overflow-wrap: anywhere;
+  }
+
+  .mobile-key-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 14px 0;
+  }
+
+  .mobile-key-meta div {
+    min-width: 0;
+  }
+
+  .mobile-key-meta dt {
+    margin-bottom: 3px;
+    color: var(--text-dim);
+    font-size: 0.7rem;
+  }
+
+  .mobile-key-meta dd {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.76rem;
+    overflow-wrap: anywhere;
+  }
+
+  .mobile-key-actions {
+    display: flex;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .mobile-key-actions .btn {
+    flex: 1;
+  }
 }
 </style>

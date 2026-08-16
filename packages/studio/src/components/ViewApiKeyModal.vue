@@ -23,12 +23,8 @@
       <div class="modal-body">
         <!-- Token Display Box -->
         <div class="token-display-box">
-          <div class="token-header flex-between">
+          <div class="token-header">
             <span class="token-label">API 访问令牌</span>
-            <button class="btn btn-xs btn-secondary" @click="copyToken">
-              <Copy :size="12" />
-              <span>复制</span>
-            </button>
           </div>
           <div class="token-content">
             <code class="token-code">{{ keyData?.key }}</code>

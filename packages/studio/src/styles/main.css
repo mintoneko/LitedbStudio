@@ -27,6 +27,7 @@
   
   --color-primary: #0284c7;
   --color-primary-hover: #0369a1;
+  --color-accent-text: #38bdf8;
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
@@ -73,6 +74,7 @@
   
   --color-primary: #0284c7;
   --color-primary-hover: #0369a1;
+  --color-accent-text: #0369a1;
   --color-success: #10b981;
   --color-warning: #d97706;
   --color-danger: #dc2626;
@@ -138,7 +140,7 @@ body {
 .text-dim { color: var(--text-dim); }
 .text-success { color: var(--color-success); }
 .text-danger { color: var(--color-danger); }
-.text-primary { color: #38bdf8; }
+.text-primary { color: var(--color-accent-text); }
 .text-xs { font-size: 0.75rem; }
 .text-sm { font-size: 0.85rem; }
 .text-center { text-align: center; }
@@ -154,7 +156,7 @@ body {
   font-weight: 600;
   border: 1px solid var(--border-subtle);
 }
-.badge.badge-primary { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border-color: rgba(56, 189, 248, 0.3); }
+.badge.badge-primary { background: rgba(56, 189, 248, 0.15); color: var(--color-accent-text); border-color: rgba(56, 189, 248, 0.3); }
 .badge.badge-success { background: rgba(16, 185, 129, 0.15); color: #10b981; border-color: rgba(16, 185, 129, 0.3); }
 
 /* Common Buttons */
@@ -274,6 +276,11 @@ body {
 
 .form-input:focus, .custom-select:focus {
   border-color: var(--border-focus);
+}
+
+:where(button, input, textarea, select, [role="button"]):focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
 }
 
 /* Card & Tables */

@@ -109,6 +109,7 @@
           <div class="theme-segmented-switch">
             <button
               :class="['theme-segment-btn', themeMode === 'system' ? 'active' : '']"
+              aria-label="跟随系统主题"
               @click="setThemeMode('system')"
             >
               <Monitor :size="13" />
@@ -116,6 +117,7 @@
             </button>
             <button
               :class="['theme-segment-btn', themeMode === 'light' ? 'active' : '']"
+              aria-label="切换浅色主题"
               @click="setThemeMode('light')"
             >
               <Sun :size="13" />
@@ -123,6 +125,7 @@
             </button>
             <button
               :class="['theme-segment-btn', themeMode === 'dark' ? 'active' : '']"
+              aria-label="切换深色主题"
               @click="setThemeMode('dark')"
             >
               <Moon :size="13" />
@@ -132,16 +135,7 @@
 
           <!-- Context-Aware Topbar Action Button -->
           <button
-            v-if="currentTab === 'auth'"
-            class="btn btn-primary"
-            @click="openCreateApiKey"
-          >
-            <Plus :size="16" />
-            <span>新建 API 密钥</span>
-          </button>
-
-          <button
-            v-else-if="currentTab === 'collections' || currentTab === 'dashboard'"
+            v-if="currentTab === 'collections' || currentTab === 'dashboard'"
             class="btn btn-primary"
             @click="openCreateCollection"
           >
@@ -216,7 +210,6 @@ const {
   isConnected,
   isSettingsOpen,
   openCreateCollection,
-  openCreateApiKey,
   checkConnection
 } = useLiteDB();
 
@@ -500,6 +493,11 @@ onUnmounted(() => {
 }
 
 .topbar-left-group {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.topbar-title-group {
   min-width: 0;
 }
 
@@ -635,6 +633,26 @@ onUnmounted(() => {
     padding: 12px 16px;
   }
 
+  .topbar-left-group {
+    flex: 1 1 auto;
+  }
+
+  .topbar-actions {
+    gap: 6px;
+  }
+
+  .theme-segmented-switch {
+    gap: 0;
+  }
+
+  .theme-segment-btn {
+    padding: 5px 8px;
+  }
+
+  .theme-segment-btn span {
+    display: none;
+  }
+
   .topbar-title-group h1 {
     font-size: 1.1rem;
   }
@@ -645,6 +663,18 @@ onUnmounted(() => {
 
   .tab-view-container {
     padding: 14px 12px;
+  }
+}
+
+@media (max-width: 380px) {
+  .topbar-actions .btn-primary {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+  }
+
+  .topbar-actions .btn-primary span {
+    display: none;
   }
 }
 </style>
