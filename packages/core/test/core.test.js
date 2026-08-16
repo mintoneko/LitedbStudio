@@ -141,19 +141,14 @@ test('LiteDB Engine & Collection - in-memory CRUD & operators', async (t) => {
     // Deleting non-admin key succeeds
     assert.equal(db.deleteApiKey(customKeyRecord.id), true);
 
-    // Deleting the last admin key throws error
+    // Deleting the protected default admin key throws error
     assert.throws(() => {
       db.deleteApiKey(adminKey.id);
     });
 
-    // Create a second admin key, now deleting one admin key succeeds
+    // Create a custom admin key, deleting it succeeds without restrictions
     const secondAdmin = db.createApiKey('Second Admin', 'admin', 'admin_secondary_key_999');
     assert.equal(db.deleteApiKey(secondAdmin.id), true);
-
-    // Now only 1 admin key remains, deleting it should throw error again
-    assert.throws(() => {
-      db.deleteApiKey(adminKey.id);
-    });
   });
 
   await t.test('Raw SQL Execution', () => {

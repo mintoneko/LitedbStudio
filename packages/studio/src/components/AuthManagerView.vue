@@ -186,14 +186,6 @@ const deleteKey = async (targetKey) => {
     return;
   }
 
-  const isTargetAdmin = targetKey.role === 'admin';
-  const adminCount = apiKeys.value.filter(k => k.role === 'admin').length;
-
-  if (isTargetAdmin && adminCount <= 1) {
-    showToast('无法注销：系统中至少需要保留一个管理员密钥 (admin)！', 'warning');
-    return;
-  }
-
   const confirmed = await showConfirm({
     title: '注销 API 密钥',
     message: `确定要注销 API 密钥 "${targetKey.name}" 吗？注销后使用此密钥的客户端和应用将立即无法再访问数据库！`,
