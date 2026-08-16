@@ -1,24 +1,5 @@
 <template>
   <div class="dashboard-view">
-    <div
-      v-if="!isConnected || isConnecting"
-      :class="['connection-banner', isConnecting ? 'connecting' : '']"
-    >
-      <div class="connection-banner-icon">
-        <Database :size="18" />
-      </div>
-      <div class="connection-banner-copy">
-        <strong>{{ isConnecting ? '正在连接 LiteDB 服务' : '尚未连接 LiteDB 服务' }}</strong>
-        <span>
-          {{ isConnecting ? '正在读取数据库状态，请稍候。' : '连接服务后才能查看集合、文档和运行指标。' }}
-        </span>
-      </div>
-      <button class="btn btn-secondary btn-sm" @click="isSettingsOpen = true">
-        <Settings :size="14" />
-        <span>连接设置</span>
-      </button>
-    </div>
-
     <!-- Stat Cards Grid -->
     <div class="stats-grid">
       <div class="stat-card">
@@ -135,7 +116,7 @@
 
 <script setup>
 import { computed } from 'vue';
-import { Database, Folder, FileText, Activity, RotateCw, Settings } from 'lucide-vue-next';
+import { Database, Folder, FileText, Activity, RotateCw } from 'lucide-vue-next';
 import { useLiteDB } from '../composables/useLiteDB.js';
 
 const emit = defineEmits(['goto-collection']);
@@ -180,53 +161,6 @@ const formatDate = (isoStr) => {
 </script>
 
 <style scoped>
-.connection-banner {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  margin-bottom: 16px;
-  background: var(--bg-card);
-  border: 1px solid rgba(2, 132, 199, 0.35);
-  border-left: 3px solid var(--color-primary);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-card);
-}
-
-.connection-banner.connecting {
-  border-left-color: var(--color-warning);
-}
-
-.connection-banner-icon {
-  width: 34px;
-  height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border-radius: 8px;
-  color: var(--color-primary);
-  background: rgba(2, 132, 199, 0.12);
-}
-
-.connection-banner-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  flex: 1;
-}
-
-.connection-banner-copy strong {
-  font-size: 0.88rem;
-  color: var(--text-main);
-}
-
-.connection-banner-copy span {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-}
-
 .empty-state-content {
   display: inline-flex;
   flex-direction: column;
@@ -318,15 +252,6 @@ const formatDate = (isoStr) => {
 }
 
 @media (max-width: 640px) {
-  .connection-banner {
-    align-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  .connection-banner .btn {
-    width: 100%;
-  }
-
   .table-scroll-note {
     display: block;
     padding: 6px 12px;
