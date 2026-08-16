@@ -36,7 +36,6 @@
           <div class="form-group">
             <label for="custom-key-input">
               自定义 API 密钥 Token
-              <span class="text-dim text-xs font-normal">（选填，留空将自动生成随机密钥）</span>
             </label>
             <input
               id="custom-key-input"
@@ -136,6 +135,7 @@ const emit = defineEmits(['created']);
 const {
   isCreateApiKeyOpen,
   closeCreateApiKey,
+  triggerApiKeyRefresh,
   apiRequest,
   showToast
 } = useLiteDB();
@@ -187,6 +187,7 @@ const handleCreate = async () => {
     });
 
     showToast(`密钥 "${res.name}" 创建成功!`, 'success');
+    triggerApiKeyRefresh();
     emit('created', res);
     closeCreateApiKey();
   } catch (err) {

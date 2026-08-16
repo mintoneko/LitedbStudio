@@ -43,6 +43,7 @@ const isConnecting = ref(false);
 const isSettingsOpen = ref(false);
 const isCreateCollectionOpen = ref(false);
 const isCreateApiKeyOpen = ref(false);
+const apiKeyVersion = ref(0);
 
 // Global confirmation modal state
 const confirmState = ref({
@@ -308,6 +309,8 @@ export function useLiteDB() {
     closeCreateCollection,
     openCreateApiKey,
     closeCreateApiKey,
+    apiKeyVersion,
+    triggerApiKeyRefresh: () => { apiKeyVersion.value++; },
     setEndpointAndKey,
     apiRequest,
     checkConnection,

@@ -25,7 +25,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="loading">
+              <tr v-if="loading && keys.length === 0">
                 <td colspan="6" class="text-center py-6 text-muted">加载密钥列表中...</td>
               </tr>
               <tr v-else-if="keys.length === 0">
@@ -73,7 +73,7 @@
         </div>
 
         <div class="mobile-key-list">
-          <div v-if="loading" class="mobile-key-state text-muted">加载密钥列表中...</div>
+          <div v-if="loading && keys.length === 0" class="mobile-key-state text-muted">加载密钥列表中...</div>
           <div v-else-if="keys.length === 0" class="mobile-key-state text-muted">暂无 API 密钥</div>
           <article v-for="k in keys" :key="k.id" class="mobile-key-card">
             <div class="mobile-key-card-header">
@@ -130,9 +130,20 @@ import { Plus, Copy, Trash2, Key } from 'lucide-vue-next';
 import { useLiteDB } from '../composables/useLiteDB.js';
 import ViewApiKeyModal from './ViewApiKeyModal.vue';
 
-const { apiRequest, showToast, showConfirm, openCreateApiKey, isCreateApiKeyOpen } = useLiteDB();
+const { apiRequest, showToast, showConfirm, openCreateApiKey, apiKeyVersion } = useLiteDB();
 
-const keys = ref([]);
+function getCachedKeys() {
+  try {
+    const cached = localStorage.getItem('litedb_cached_keys');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch {}
+  return [];
+}
+
+const keys = ref(getCachedKeys());
 const loading = ref(false);
 
 const isViewKeyModalOpen = ref(false);
@@ -143,11 +154,16 @@ const openViewKeyModal = (key) => {
   isViewKeyModalOpen.value = true;
 };
 
-const loadKeys = async () => {
-  loading.value = true;
+const loadKeys = async (showLoading = false) => {
+  if (showLoading && keys.value.length === 0) {
+    loading.value = true;
+  }
   try {
     const res = await apiRequest('/api/auth/keys');
     keys.value = res || [];
+    try {
+      localStorage.setItem('litedb_cached_keys', JSON.stringify(res || []));
+    } catch {}
   } catch (err) {
     showToast(`加载密钥失败: ${err.message}`, 'error');
   } finally {
@@ -159,10 +175,8 @@ const promptCreateKey = () => {
   openCreateApiKey();
 };
 
-watch(isCreateApiKeyOpen, (open) => {
-  if (!open) {
-    loadKeys();
-  }
+watch(apiKeyVersion, () => {
+  loadKeys(false);
 });
 
 const copyKey = (token) => {
@@ -192,7 +206,7 @@ const deleteKey = async (targetKey) => {
   try {
     await apiRequest(`/api/auth/keys/${targetKey.id}`, { method: 'DELETE' });
     showToast('API 密钥已注销删除', 'success');
-    loadKeys();
+    loadKeys(false);
   } catch (err) {
     showToast(`删除失败: ${err.message}`, 'error');
   }
@@ -215,7 +229,7 @@ const formatDate = (isoStr) => {
 };
 
 onMounted(() => {
-  loadKeys();
+  loadKeys(false);
 });
 </script>
 
