@@ -38,8 +38,8 @@
   --table-hover-bg: #16161a;
   --topbar-bg: rgba(0, 0, 0, 0.88);
 
-  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'Fira Code', ui-monospace, SFMono-Regular, monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "Cascadia Code", "Fira Code", "Source Code Pro", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   
   --radius-sm: 6px;
   --radius-md: 10px;

@@ -15,7 +15,7 @@ if (endpoint.value.startsWith('null') || endpoint.value.startsWith('file:')) {
 }
 
 const apiKey = ref(localStorage.getItem('litedb_apikey') || '');
-const isConnected = ref(false);
+const isConnected = ref(Boolean(apiKey.value));
 const isConnecting = ref(false);
 const isSettingsOpen = ref(false);
 const isCreateCollectionOpen = ref(false);
@@ -59,18 +59,39 @@ if (typeof window !== 'undefined' && window.matchMedia) {
   });
 }
 
-const stats = ref({
-  path: '-',
-  driver: 'SQLite WAL',
-  fileSizeBytes: 0,
-  fileSizeFormatted: '-',
-  collectionsCount: 0,
-  totalDocuments: 0,
-  apiKeysCount: 0,
-  memoryUsage: { rss: 0, heapUsed: 0 }
-});
+function getCachedStats() {
+  try {
+    const cached = localStorage.getItem('litedb_cached_stats');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (parsed && typeof parsed === 'object') return parsed;
+    }
+  } catch {}
+  return {
+    path: '-',
+    driver: 'SQLite WAL',
+    fileSizeBytes: 0,
+    fileSizeFormatted: '0 B',
+    collectionsCount: 0,
+    totalDocuments: 0,
+    apiKeysCount: 0,
+    memoryUsage: { rss: 0, heapUsed: 0 }
+  };
+}
 
-const collections = ref([]);
+function getCachedCollections() {
+  try {
+    const cached = localStorage.getItem('litedb_cached_collections');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch {}
+  return [];
+}
+
+const stats = ref(getCachedStats());
+const collections = ref(getCachedCollections());
 const toasts = ref([]);
 
 export function useLiteDB() {
@@ -203,6 +224,9 @@ export function useLiteDB() {
     try {
       const data = await apiRequest('/api/system/stats');
       stats.value = data;
+      try {
+        localStorage.setItem('litedb_cached_stats', JSON.stringify(data));
+      } catch {}
     } catch {
       // ignore
     }
@@ -212,6 +236,9 @@ export function useLiteDB() {
     try {
       const cols = await apiRequest('/api/collections');
       collections.value = cols || [];
+      try {
+        localStorage.setItem('litedb_cached_collections', JSON.stringify(cols || []));
+      } catch {}
     } catch {
       // ignore
     }

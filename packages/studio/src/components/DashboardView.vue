@@ -9,8 +9,8 @@
             <Database :size="18" />
           </div>
         </div>
-        <div class="stat-value">{{ isConnected ? (stats.fileSizeFormatted || '0 B') : '—' }}</div>
-        <div class="stat-footer">{{ isConnected ? `路径: ${stats.path}` : '连接后显示数据库路径' }}</div>
+        <div class="stat-value">{{ stats.fileSizeFormatted || '0 B' }}</div>
+        <div class="stat-footer">{{ stats.path && stats.path !== '-' ? `路径: ${stats.path}` : '数据库文件路径' }}</div>
       </div>
 
       <div class="stat-card">
@@ -20,7 +20,7 @@
             <Folder :size="18" />
           </div>
         </div>
-        <div class="stat-value">{{ isConnected ? stats.collectionsCount : '—' }}</div>
+        <div class="stat-value">{{ stats.collectionsCount ?? 0 }}</div>
         <div class="stat-footer">当前已注册分类</div>
       </div>
 
@@ -31,7 +31,7 @@
             <FileText :size="18" />
           </div>
         </div>
-        <div class="stat-value">{{ isConnected ? stats.totalDocuments : '—' }}</div>
+        <div class="stat-value">{{ stats.totalDocuments ?? 0 }}</div>
         <div class="stat-footer">总 JSON 文档记录数</div>
       </div>
 
@@ -43,7 +43,7 @@
           </div>
         </div>
         <div class="stat-value">{{ formattedRss }}</div>
-        <div class="stat-footer">引擎: {{ stats.driver }}</div>
+        <div class="stat-footer">引擎: {{ stats.driver || 'SQLite WAL' }}</div>
       </div>
     </div>
 
@@ -72,10 +72,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="isConnecting">
-                <td colspan="5" class="text-center py-6 text-muted">正在读取数据库状态...</td>
-              </tr>
-              <tr v-else-if="!isConnected">
+              <tr v-if="!isConnected && !apiKey">
                 <td colspan="5" class="text-center py-6">
                   <div class="empty-state-content">
                     <strong>连接服务后显示集合</strong>
@@ -88,7 +85,7 @@
               </tr>
               <tr v-else-if="collections.length === 0">
                 <td colspan="5" class="text-center py-6 text-muted">
-                  暂无任何集合，点击右上角「新建集合」开启
+                  {{ isConnecting ? '正在同步集合数据...' : '暂无任何集合，点击右上角「新建集合」开启' }}
                 </td>
               </tr>
               <tr v-for="c in collections" :key="c.name">
@@ -126,13 +123,14 @@ const {
   isConnected,
   isConnecting,
   isSettingsOpen,
+  apiKey,
   refreshStats,
   refreshCollections,
   showToast
 } = useLiteDB();
 
 const formattedRss = computed(() => {
-  if (!isConnected.value || !stats.value?.memoryUsage?.rss) return '—';
+  if (!stats.value?.memoryUsage?.rss) return '0 MB';
   const mb = (stats.value.memoryUsage.rss / (1024 * 1024)).toFixed(1);
   return `${mb} MB`;
 });
