@@ -23,11 +23,13 @@ export interface LiteDBEngineOptions {
   adminKey?: string;
 }
 
+export type ApiKeyRole = 'admin' | 'write' | 'read' | 'read-write' | 'read-only';
+
 export interface ApiKeyRecord {
   id: string;
   key: string;
   name: string;
-  role: 'admin' | 'read-write' | 'read-only';
+  role: 'admin' | 'write' | 'read';
   created_at: string;
   last_used_at?: string;
 }
@@ -75,7 +77,7 @@ export class LiteDBEngine {
   collection<T = Record<string, any>>(name: string): Collection<T>;
   listCollections(): CollectionMeta[];
   dropCollection(name: string): void;
-  createApiKey(name: string, role?: 'admin' | 'read-write' | 'read-only', customKey?: string): ApiKeyRecord;
+  createApiKey(name: string, role?: ApiKeyRole, customKey?: string): ApiKeyRecord;
   listApiKeys(): ApiKeyRecord[];
   deleteApiKey(id: string): boolean;
   validateApiKey(apiKey: string): ApiKeyRecord | null;

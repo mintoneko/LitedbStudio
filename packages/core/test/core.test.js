@@ -106,19 +106,27 @@ test('LiteDB Engine & Collection - in-memory CRUD & operators', async (t) => {
   });
 
   await t.test('API Keys Management', () => {
-    const keyRecord = db.createApiKey('Test Client', 'read-write');
+    const keyRecord = db.createApiKey('Test Client', 'write');
     assert.ok(keyRecord.key);
-    assert.equal(keyRecord.role, 'read-write');
+    assert.equal(keyRecord.role, 'write');
+
+    const legacyKeyRecord = db.createApiKey('Legacy Client', 'read-write');
+    assert.equal(legacyKeyRecord.role, 'write');
+
+    const readKeyRecord = db.createApiKey('Read Client', 'read');
+    assert.equal(readKeyRecord.role, 'read');
 
     const valid = db.validateApiKey(keyRecord.key);
     assert.ok(valid);
     assert.equal(valid.name, 'Test Client');
+    assert.equal(valid.role, 'write');
 
     const invalid = db.validateApiKey('invalid_key_123');
     assert.equal(invalid, null);
 
     const list = db.listApiKeys();
-    assert.ok(list.length >= 2); // Default admin + test client
+    assert.ok(list.length >= 2); // 管理员密钥 + test clients
+    assert.ok(list.some(k => k.name === '管理员密钥'));
   });
 
   await t.test('Raw SQL Execution', () => {

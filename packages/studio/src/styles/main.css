@@ -158,6 +158,7 @@ body {
 }
 .badge.badge-primary { background: rgba(56, 189, 248, 0.15); color: var(--color-accent-text); border-color: rgba(56, 189, 248, 0.3); }
 .badge.badge-success { background: rgba(16, 185, 129, 0.15); color: #10b981; border-color: rgba(16, 185, 129, 0.3); }
+.badge.badge-warning { background: rgba(245, 158, 11, 0.15); color: var(--color-warning); border-color: rgba(245, 158, 11, 0.3); }
 
 /* Common Buttons */
 .btn {

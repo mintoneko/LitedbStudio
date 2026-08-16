@@ -37,36 +37,36 @@
             <label>权限级别</label>
             <div class="role-selector-grid">
               <label
-                :class="['role-card', selectedRole === 'read-write' ? 'selected' : '']"
-                @click="selectedRole = 'read-write'"
+                :class="['role-card', selectedRole === 'write' ? 'selected' : '']"
+                @click="selectedRole = 'write'"
               >
                 <input
                   v-model="selectedRole"
                   type="radio"
                   name="role"
-                  value="read-write"
+                  value="write"
                   class="sr-only"
                 />
                 <div class="role-card-header flex-between">
-                  <span class="role-title">读写权限</span>
+                  <span class="role-title">读写权限 (write)</span>
                   <span class="badge badge-success">推荐</span>
                 </div>
                 <p class="role-desc">允许对数据集合进行查询、新增、修改与删除文档。</p>
               </label>
 
               <label
-                :class="['role-card', selectedRole === 'read-only' ? 'selected' : '']"
-                @click="selectedRole = 'read-only'"
+                :class="['role-card', selectedRole === 'read' ? 'selected' : '']"
+                @click="selectedRole = 'read'"
               >
                 <input
                   v-model="selectedRole"
                   type="radio"
                   name="role"
-                  value="read-only"
+                  value="read"
                   class="sr-only"
                 />
                 <div class="role-card-header flex-between">
-                  <span class="role-title">只读权限</span>
+                  <span class="role-title">只读权限 (read)</span>
                 </div>
                 <p class="role-desc">仅允许查询和读取集合数据，禁止任何写操作与数据修改。</p>
               </label>
@@ -83,7 +83,7 @@
                   class="sr-only"
                 />
                 <div class="role-card-header flex-between">
-                  <span class="role-title">超级管理</span>
+                  <span class="role-title">超级管理 (admin)</span>
                   <span class="badge badge-primary">最高权限</span>
                 </div>
                 <p class="role-desc">拥有全部权限，包括集合创建与删除、API 密钥管理及 SQL 执行。</p>
@@ -125,14 +125,14 @@ const {
 
 const inputRef = ref(null);
 const keyName = ref('');
-const selectedRole = ref('read-write');
+const selectedRole = ref('write');
 const errorMessage = ref('');
 const submitting = ref(false);
 
 watch(isCreateApiKeyOpen, (open) => {
   if (open) {
     keyName.value = '';
-    selectedRole.value = 'read-write';
+    selectedRole.value = 'write';
     errorMessage.value = '';
     submitting.value = false;
     nextTick(() => {

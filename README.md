@@ -37,7 +37,7 @@ LiteDB 适合以下场景：
 | 双运行模式 | `@litedb/client` 同时支持远程 HTTP 模式和本地 embedded 模式，两种模式使用同一套集合 API。 |
 | 查询与分页 | 支持比较、集合、模糊匹配、逻辑组合、字段选择、排序、limit/skip 和分页。 |
 | REST 服务 | 内置 Node.js HTTP 服务，提供集合、文档、API 密钥、统计、快照和原生 SQL 接口。 |
-| API 密钥分级 | 支持 `read-only`、`read-write`、`admin` 三种角色。 |
+| API 密钥分级 | 支持 `read`、`write`、`admin` 三种角色（兼容旧名 `read-only`/`read-write`）。 |
 | Studio 控制台 | 提供概览、集合数据、API 密钥和备份恢复四个工作区，并支持响应式布局。 |
 | 快照备份 | 可将所有集合和文档导出为 JSON，也可以从 JSON 快照导入。 |
 
@@ -238,7 +238,7 @@ Studio 创建集合时只允许英文字母、数字和下划线，例如 `users
 只有管理员密钥可以打开完整的密钥管理能力。页面支持：
 
 - 创建独立 API Key；
-- 选择 `read-only`、`read-write` 或 `admin`；
+- 选择 `read` (只读)、`write` (读写) 或 `admin` (超级管理)；
 - 查看并复制 Token；
 - 查看创建时间和最后使用时间；
 - 注销密钥。
@@ -523,11 +523,11 @@ x-api-key: your_api_key
 
 角色按权限从低到高排列：
 
-| 角色 | 能力 |
-| --- | --- |
-| `read-only` | 健康状态、系统统计、集合列表、查询、按 ID 读取、计数。 |
-| `read-write` | 包含 `read-only` 能力，并可新增、更新、删除文档。 |
-| `admin` | 包含全部能力，并可创建/删除集合、清空集合、创建索引、管理 API Key、执行原生 SQL、导出/导入快照。 |
+| 角色 | 能力 | 说明 |
+| --- | --- | --- |
+| `read` | 健康状态、系统统计、集合列表、查询、按 ID 读取、计数。 | 只读（兼容 `read-only`） |
+| `write` | 包含 `read` 能力，并可新增、更新、删除文档。 | 读写（兼容 `read-write`） |
+| `admin` | 包含全部能力，并可创建/删除集合、清空集合、创建索引、管理 API Key、执行原生 SQL、导出/导入快照。 | 超级管理 |
 
 ### 接口速查
 
@@ -535,22 +535,22 @@ x-api-key: your_api_key
 | --- | --- | --- | --- |
 | `GET` | `/api/ping` | 公开 | 健康检查。 |
 | `GET` / `POST` | `/api/auth/verify` | 根据请求 | 校验 API Key 并返回角色。 |
-| `GET` | `/api/system/stats` | `read-only` | 返回数据库与进程统计。 |
+| `GET` | `/api/system/stats` | `read` | 返回数据库与进程统计。 |
 | `GET` | `/api/system/export` | `admin` | 导出 JSON 快照。 |
 | `POST` | `/api/system/import` | `admin` | 导入 JSON 快照。 |
 | `GET` | `/api/auth/keys` | `admin` | 列出 API Key。 |
 | `POST` | `/api/auth/keys` | `admin` | 创建 API Key。 |
 | `DELETE` | `/api/auth/keys/:id` | `admin` | 删除 API Key。 |
-| `GET` | `/api/collections` | `read-only` | 列出集合及文档数。 |
+| `GET` | `/api/collections` | `read` | 列出集合及文档数。 |
 | `POST` | `/api/collections` | `admin` | 创建集合。 |
 | `DELETE` | `/api/collections/:name` | `admin` | 删除集合。 |
-| `POST` | `/api/collections/:name/insert` | `read-write` | 插入单条或批量文档。 |
-| `POST` | `/api/collections/:name/query` | `read-only` | 条件查询、排序、字段选择、分页。 |
-| `POST` | `/api/collections/:name/count` | `read-only` | 按条件统计数量。 |
-| `GET` | `/api/collections/:name/:id` | `read-only` | 按 ID 读取文档。 |
-| `PUT` | `/api/collections/:name/:id` | `read-write` | 按 ID 局部更新文档。 |
-| `PUT` | `/api/collections/:name` | `read-write` | 批量更新文档。 |
-| `DELETE` | `/api/collections/:name/:id` | `read-write` | 按 ID 删除文档。 |
+| `POST` | `/api/collections/:name/insert` | `write` | 插入单条或批量文档。 |
+| `POST` | `/api/collections/:name/query` | `read` | 条件查询、排序、字段选择、分页。 |
+| `POST` | `/api/collections/:name/count` | `read` | 按条件统计数量。 |
+| `GET` | `/api/collections/:name/:id` | `read` | 按 ID 读取文档。 |
+| `PUT` | `/api/collections/:name/:id` | `write` | 按 ID 局部更新文档。 |
+| `PUT` | `/api/collections/:name` | `write` | 批量更新文档。 |
+| `DELETE` | `/api/collections/:name/:id` | `write` | 按 ID 删除文档。 |
 | `POST` | `/api/collections/:name/clear` | `admin` | 清空集合。 |
 | `POST` | `/api/collections/:name/index` | `admin` | 为 JSON 字段创建索引。 |
 | `POST` | `/api/sql` | `admin` | 执行参数化原生 SQL。 |
@@ -658,10 +658,10 @@ const removed = await todos.deleteById(1);
 curl -X POST http://localhost:3000/api/auth/keys \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer admin_litedb_master" \
-  -d "{\"name\":\"web-app\",\"role\":\"read-write\"}"
+  -d "{\"name\":\"web-app\",\"role\":\"write\"}"
 ~~~
 
-`role` 可选值为 `read-only`、`read-write` 和 `admin`。服务端会记录 `last_used_at`，用于在 Studio 中查看最近使用时间。
+`role` 可选值为 `read`、`write` 和 `admin`（同时向下兼容 `read-only` 与 `read-write`）。服务端会记录 `last_used_at`，用于在 Studio 中查看最近使用时间。
 
 ### 原生 SQL
 

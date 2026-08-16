@@ -129,13 +129,15 @@ test('LiteDB Server REST API & Auth', async (t) => {
   await t.test('API Keys creation & deletion', async () => {
     const createKey = await request('/api/auth/keys', {
       method: 'POST',
-      body: JSON.stringify({ name: 'Web Client Key', role: 'read-write' })
+      body: JSON.stringify({ name: 'Web Client Key', role: 'write' })
     });
     assert.equal(createKey.status, 201);
+    assert.equal(createKey.json.data.role, 'write');
     const keyId = createKey.json.data.id;
 
     const listKeys = await request('/api/auth/keys');
     assert.ok(listKeys.json.data.length >= 2);
+    assert.ok(listKeys.json.data.some(k => k.name === '管理员密钥'));
 
     const delKey = await request(`/api/auth/keys/${keyId}`, {
       method: 'DELETE'

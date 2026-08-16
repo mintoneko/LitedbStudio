@@ -43,7 +43,7 @@
                   </button>
                 </td>
                 <td>
-                  <span :class="['badge', k.role === 'admin' ? 'badge-primary' : 'badge-success']">
+                  <span :class="['badge', getRoleBadgeClass(k.role)]">
                     {{ k.role }}
                   </span>
                 </td>
@@ -79,7 +79,7 @@
             <div class="mobile-key-card-header">
               <div class="mobile-key-card-title">
                 <strong>{{ k.name }}</strong>
-                <span :class="['badge', k.role === 'admin' ? 'badge-primary' : 'badge-success']">
+                <span :class="['badge', getRoleBadgeClass(k.role)]">
                   {{ k.role }}
                 </span>
               </div>
@@ -188,6 +188,12 @@ const deleteKey = async (id) => {
   } catch (err) {
     showToast(`删除失败: ${err.message}`, 'error');
   }
+};
+
+const getRoleBadgeClass = (role) => {
+  if (role === 'admin') return 'badge-primary';
+  if (role === 'write' || role === 'read-write') return 'badge-success';
+  return 'badge-warning';
 };
 
 const formatDate = (isoStr) => {

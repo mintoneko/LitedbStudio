@@ -31,7 +31,7 @@ export class LiteDBServer {
     });
 
     // 2. System Stats
-    this.router.get('/api/system/stats', this._requireRole('read-only'), (req, res) => {
+    this.router.get('/api/system/stats', this._requireRole('read'), (req, res) => {
       const stats = this.engine.getStats();
       this._sendJson(res, 200, { success: true, data: stats });
     });
@@ -78,7 +78,7 @@ export class LiteDBServer {
       if (!name) {
         return this._sendError(res, 400, 'Key name is required');
       }
-      const newKey = this.engine.createApiKey(name, role || 'read-write', customKey);
+      const newKey = this.engine.createApiKey(name, role || 'write', customKey);
       this._sendJson(res, 201, { success: true, data: newKey });
     });
 
@@ -88,7 +88,7 @@ export class LiteDBServer {
     });
 
     // 7. Collections list & creation
-    this.router.get('/api/collections', this._requireRole('read-only'), (req, res) => {
+    this.router.get('/api/collections', this._requireRole('read'), (req, res) => {
       const collections = this.engine.listCollections();
       this._sendJson(res, 200, { success: true, data: collections });
     });
@@ -107,7 +107,7 @@ export class LiteDBServer {
 
     // 8. Collection CRUD operations
     // Insert single or batch
-    this.router.post('/api/collections/:name/insert', this._requireRole('read-write'), (req, res) => {
+    this.router.post('/api/collections/:name/insert', this._requireRole('write'), (req, res) => {
       const col = this.engine.collection(req.params.name);
       const body = req.body || {};
       if (Array.isArray(body)) {
@@ -124,7 +124,7 @@ export class LiteDBServer {
     });
 
     // Query documents
-    this.router.post('/api/collections/:name/query', this._requireRole('read-only'), (req, res) => {
+    this.router.post('/api/collections/:name/query', this._requireRole('read'), (req, res) => {
       if (!this.engine.hasCollection(req.params.name)) {
         const { page, pageSize } = req.body || {};
         if (page !== undefined || pageSize !== undefined) {
@@ -149,7 +149,7 @@ export class LiteDBServer {
     });
 
     // Count
-    this.router.post('/api/collections/:name/count', this._requireRole('read-only'), (req, res) => {
+    this.router.post('/api/collections/:name/count', this._requireRole('read'), (req, res) => {
       if (!this.engine.hasCollection(req.params.name)) {
         return this._sendJson(res, 200, { success: true, data: { count: 0 } });
       }
@@ -160,7 +160,7 @@ export class LiteDBServer {
     });
 
     // Find by ID
-    this.router.get('/api/collections/:name/:id', this._requireRole('read-only'), (req, res) => {
+    this.router.get('/api/collections/:name/:id', this._requireRole('read'), (req, res) => {
       if (!this.engine.hasCollection(req.params.name)) {
         return this._sendError(res, 404, 'Collection not found');
       }
@@ -173,7 +173,7 @@ export class LiteDBServer {
     });
 
     // Update by ID (Partial patch)
-    this.router.put('/api/collections/:name/:id', this._requireRole('read-write'), (req, res) => {
+    this.router.put('/api/collections/:name/:id', this._requireRole('write'), (req, res) => {
       if (!this.engine.hasCollection(req.params.name)) {
         return this._sendError(res, 404, 'Collection not found');
       }
@@ -187,7 +187,7 @@ export class LiteDBServer {
     });
 
     // Update Many
-    this.router.put('/api/collections/:name', this._requireRole('read-write'), (req, res) => {
+    this.router.put('/api/collections/:name', this._requireRole('write'), (req, res) => {
       if (!this.engine.hasCollection(req.params.name)) {
         return this._sendJson(res, 200, { success: true, data: { updatedCount: 0 } });
       }
@@ -201,9 +201,9 @@ export class LiteDBServer {
     });
 
     // Delete by ID
-    this.router.delete('/api/collections/:name/:id', this._requireRole('read-write'), (req, res) => {
+    this.router.delete('/api/collections/:name/:id', this._requireRole('write'), (req, res) => {
       if (!this.engine.hasCollection(req.params.name)) {
-        return this._sendError(res, 404, 'Document not found');
+        return this._sendError(res, 404, 'Collection not found');
       }
       const col = this.engine.collection(req.params.name);
       const deleted = col.deleteById(req.params.id);
@@ -214,7 +214,7 @@ export class LiteDBServer {
     });
 
     // Delete Many
-    this.router.delete('/api/collections/:name', this._requireRole('read-write'), (req, res) => {
+    this.router.delete('/api/collections/:name', this._requireRole('write'), (req, res) => {
       if (!this.engine.hasCollection(req.params.name)) {
         return this._sendJson(res, 200, { success: true, data: { deletedCount: 0 } });
       }
@@ -275,7 +275,13 @@ export class LiteDBServer {
   }
 
   _requireRole(minRole) {
-    const roleRank = { 'read-only': 1, 'read-write': 2, 'admin': 3 };
+    const roleRank = {
+      'read': 1,
+      'read-only': 1,
+      'write': 2,
+      'read-write': 2,
+      'admin': 3
+    };
 
     return (req, res, next) => {
       if (this.allowAnonymous) {

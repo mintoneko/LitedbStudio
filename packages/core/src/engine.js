@@ -34,7 +34,7 @@ export class LiteDBEngine {
         "id" TEXT PRIMARY KEY,
         "key" TEXT UNIQUE NOT NULL,
         "name" TEXT NOT NULL,
-        "role" TEXT NOT NULL DEFAULT 'read-write', -- 'admin', 'read-write', 'read-only'
+        "role" TEXT NOT NULL DEFAULT 'write', -- 'admin', 'write', 'read'
         "created_at" TEXT NOT NULL,
         "last_used_at" TEXT
       );
@@ -44,7 +44,7 @@ export class LiteDBEngine {
     const keyCount = this.adapter.prepare(`SELECT COUNT(*) as count FROM "_litedb_keys"`).get();
     if (!keyCount || keyCount.count === 0) {
       const adminKey = defaultAdminKey || `admin_${generateId(24)}`;
-      this.createApiKey('Default Admin Key', 'admin', adminKey);
+      this.createApiKey('管理员密钥', 'admin', adminKey);
     }
   }
 
@@ -136,25 +136,41 @@ export class LiteDBEngine {
   }
 
   /**
+   * Normalize role name to ensure compatibility across read/write/admin and legacy names
+   */
+  _normalizeRole(role) {
+    if (role === 'read-only' || role === 'read') return 'read';
+    if (role === 'read-write' || role === 'write') return 'write';
+    if (role === 'admin') return 'admin';
+    return 'write';
+  }
+
+  /**
    * API Key Management
    */
-  createApiKey(name, role = 'read-write', customKey = null) {
+  createApiKey(name, role = 'write', customKey = null) {
     const id = generateId();
     const key = customKey || `key_${generateId(24)}`;
     const now = nowTimestamp();
+    const normalizedRole = this._normalizeRole(role);
 
     this.adapter.prepare(`
       INSERT INTO "_litedb_keys" (id, key, name, role, created_at)
       VALUES (?, ?, ?, ?, ?)
-    `).run(id, key, name, role, now);
+    `).run(id, key, name, normalizedRole, now);
 
-    return { id, key, name, role, created_at: now };
+    return { id, key, name, role: normalizedRole, created_at: now };
   }
 
   listApiKeys() {
-    return this.adapter.prepare(`
+    const rows = this.adapter.prepare(`
       SELECT id, key, name, role, created_at, last_used_at FROM "_litedb_keys" ORDER BY created_at DESC
     `).all();
+
+    return rows.map((r) => ({
+      ...r,
+      role: this._normalizeRole(r.role)
+    }));
   }
 
   deleteApiKey(id) {
@@ -176,7 +192,10 @@ export class LiteDBEngine {
       } catch {
         // Ignore timestamp update failure
       }
-      return row;
+      return {
+        ...row,
+        role: this._normalizeRole(row.role)
+      };
     }
     return null;
   }

@@ -47,10 +47,10 @@ notes.insertMany([
   }
 ]);
 
-// 4. 创建一个前端专用的 Read-Write 密钥
+// 4. 创建一个前端专用的 Write 读写密钥
 const existingKeys = db.listApiKeys();
 if (!existingKeys.some(k => k.name === '前端应用只读/写入密钥')) {
-  db.createApiKey('前端应用只读/写入密钥', 'read-write', 'key_frontend_webapp_live');
+  db.createApiKey('前端应用只读/写入密钥', 'write', 'key_frontend_webapp_live');
 }
 
 console.log('✅ 演示数据初始化完成！');
