@@ -1,10 +1,21 @@
-# ⚡ LiteDB Studio
+<h1 align="center">
+  <img src="packages/studio/public/favicon.svg" alt="LiteDB Studio Logo" width="72" height="72" valign="middle">
+  LiteDB Studio
+</h1>
 
-> 面向前端、轻量全栈项目和桌面应用的轻量级 JSON 文档数据库。
->
-> LiteDB 将 SQLite WAL 存储引擎、HTTP REST 服务、同构 JavaScript SDK 与 Vue 3 管理控制台组合在一个 monorepo 中，既可以作为本地嵌入式数据库使用，也可以作为独立的轻量 API 服务运行。
+<p align="center">
+  面向前端、轻量全栈项目和桌面应用的轻量级 JSON 文档数据库。
+</p>
 
-[GitHub 仓库](https://github.com/mintoneko/LitedbStudio)
+<p align="center">
+  LiteDB 将 SQLite WAL 存储引擎、HTTP REST 服务、同构 JavaScript SDK 与 Vue 3 管理控制台组合在一个 monorepo 中，既可以作为本地嵌入式数据库使用，也可以作为独立的轻量 API 服务运行。
+</p>
+
+<p align="center">
+  <a href="https://github.com/mintoneko/LitedbStudio">GitHub 仓库</a>
+  ·
+  <a href="LICENSE">MIT License</a>
+</p>
 
 ## 项目定位
 
