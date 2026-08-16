@@ -105,7 +105,7 @@ test('LiteDB Engine & Collection - in-memory CRUD & operators', async (t) => {
     assert.equal(users.count(), 1); // Only Alice remains
   });
 
-  await t.test('API Keys Management', () => {
+  await t.test('API Keys Management & Protection', () => {
     const keyRecord = db.createApiKey('Test Client', 'write');
     assert.ok(keyRecord.key);
     assert.equal(keyRecord.role, 'write');
@@ -115,6 +115,15 @@ test('LiteDB Engine & Collection - in-memory CRUD & operators', async (t) => {
 
     const readKeyRecord = db.createApiKey('Read Client', 'read');
     assert.equal(readKeyRecord.role, 'read');
+
+    // Test custom API Key token
+    const customKeyRecord = db.createApiKey('Custom Token Client', 'write', 'my_custom_token_123');
+    assert.equal(customKeyRecord.key, 'my_custom_token_123');
+
+    // Test duplicate custom token throws error
+    assert.throws(() => {
+      db.createApiKey('Duplicate Custom Token', 'read', 'my_custom_token_123');
+    });
 
     const valid = db.validateApiKey(keyRecord.key);
     assert.ok(valid);
@@ -126,7 +135,25 @@ test('LiteDB Engine & Collection - in-memory CRUD & operators', async (t) => {
 
     const list = db.listApiKeys();
     assert.ok(list.length >= 2); // 管理员密钥 + test clients
-    assert.ok(list.some(k => k.name === '管理员密钥'));
+    const adminKey = list.find(k => k.name === '管理员密钥');
+    assert.ok(adminKey);
+
+    // Deleting non-admin key succeeds
+    assert.equal(db.deleteApiKey(customKeyRecord.id), true);
+
+    // Deleting the last admin key throws error
+    assert.throws(() => {
+      db.deleteApiKey(adminKey.id);
+    });
+
+    // Create a second admin key, now deleting one admin key succeeds
+    const secondAdmin = db.createApiKey('Second Admin', 'admin', 'admin_secondary_key_999');
+    assert.equal(db.deleteApiKey(secondAdmin.id), true);
+
+    // Now only 1 admin key remains, deleting it should throw error again
+    assert.throws(() => {
+      db.deleteApiKey(adminKey.id);
+    });
   });
 
   await t.test('Raw SQL Execution', () => {

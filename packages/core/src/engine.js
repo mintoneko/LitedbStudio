@@ -41,8 +41,8 @@ export class LiteDBEngine {
     `);
 
     // Ensure at least one admin API key exists
-    const keyCount = this.adapter.prepare(`SELECT COUNT(*) as count FROM "_litedb_keys"`).get();
-    if (!keyCount || keyCount.count === 0) {
+    const adminCount = this.adapter.prepare(`SELECT COUNT(*) as count FROM "_litedb_keys" WHERE role = 'admin'`).get()?.count || 0;
+    if (adminCount === 0) {
       const adminKey = defaultAdminKey || `admin_${generateId(24)}`;
       this.createApiKey('管理员密钥', 'admin', adminKey);
     }
@@ -150,7 +150,15 @@ export class LiteDBEngine {
    */
   createApiKey(name, role = 'write', customKey = null) {
     const id = generateId();
-    const key = customKey || `key_${generateId(24)}`;
+    let key = customKey ? String(customKey).trim() : '';
+    if (!key) {
+      key = `key_${generateId(24)}`;
+    } else {
+      const existing = this.adapter.prepare(`SELECT id FROM "_litedb_keys" WHERE key = ?`).get(key);
+      if (existing) {
+        throw new Error(`API 密钥 Token '${key}' 已存在，请使用其他 Token`);
+      }
+    }
     const now = nowTimestamp();
     const normalizedRole = this._normalizeRole(role);
 
@@ -174,6 +182,19 @@ export class LiteDBEngine {
   }
 
   deleteApiKey(id) {
+    const keyRecord = this.adapter.prepare(`SELECT role FROM "_litedb_keys" WHERE id = ?`).get(id);
+    if (!keyRecord) {
+      return false;
+    }
+    const normalizedRole = this._normalizeRole(keyRecord.role);
+    if (normalizedRole === 'admin') {
+      const adminCount = this.adapter.prepare(
+        `SELECT COUNT(*) as c FROM "_litedb_keys" WHERE role = 'admin'`
+      ).get()?.c || 0;
+      if (adminCount <= 1) {
+        throw new Error('系统中至少需要保留一个管理员密钥 (admin)，无法删除！');
+      }
+    }
     const res = this.adapter.prepare(`DELETE FROM "_litedb_keys" WHERE id = ?`).run(id);
     return (res.changes || 0) > 0;
   }

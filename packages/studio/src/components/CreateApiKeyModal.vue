@@ -26,7 +26,24 @@
               v-model="keyName"
               type="text"
               class="form-input"
-              placeholder="输入密钥名称"
+              placeholder="输入密钥名称或用途说明"
+              autocomplete="off"
+              :disabled="submitting"
+              @input="errorMessage = ''"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="custom-key-input">
+              自定义 API 密钥 Token
+              <span class="text-dim text-xs font-normal">（选填，留空将自动生成随机密钥）</span>
+            </label>
+            <input
+              id="custom-key-input"
+              v-model="customKey"
+              type="text"
+              class="form-input font-mono"
+              placeholder="例如：my_custom_secret_key_2026"
               autocomplete="off"
               :disabled="submitting"
               @input="errorMessage = ''"
@@ -125,6 +142,7 @@ const {
 
 const inputRef = ref(null);
 const keyName = ref('');
+const customKey = ref('');
 const selectedRole = ref('write');
 const errorMessage = ref('');
 const submitting = ref(false);
@@ -132,6 +150,7 @@ const submitting = ref(false);
 watch(isCreateApiKeyOpen, (open) => {
   if (open) {
     keyName.value = '';
+    customKey.value = '';
     selectedRole.value = 'write';
     errorMessage.value = '';
     submitting.value = false;
@@ -162,7 +181,8 @@ const handleCreate = async () => {
       method: 'POST',
       body: {
         name,
-        role: selectedRole.value
+        role: selectedRole.value,
+        customKey: customKey.value.trim() || undefined
       }
     });
 

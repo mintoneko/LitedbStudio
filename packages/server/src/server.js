@@ -74,17 +74,25 @@ export class LiteDBServer {
     });
 
     this.router.post('/api/auth/keys', this._requireRole('admin'), (req, res) => {
-      const { name, role, customKey } = req.body || {};
+      const { name, role, customKey, key } = req.body || {};
       if (!name) {
         return this._sendError(res, 400, '密钥名称不能为空');
       }
-      const newKey = this.engine.createApiKey(name, role || 'write', customKey);
-      this._sendJson(res, 201, { success: true, data: newKey });
+      try {
+        const newKey = this.engine.createApiKey(name, role || 'write', customKey || key);
+        this._sendJson(res, 201, { success: true, data: newKey });
+      } catch (err) {
+        this._sendError(res, 400, err.message);
+      }
     });
 
     this.router.delete('/api/auth/keys/:id', this._requireRole('admin'), (req, res) => {
-      const success = this.engine.deleteApiKey(req.params.id);
-      this._sendJson(res, 200, { success, message: success ? 'Key deleted' : 'Key not found' });
+      try {
+        const success = this.engine.deleteApiKey(req.params.id);
+        this._sendJson(res, 200, { success, message: success ? 'API 密钥已删除' : '密钥不存在' });
+      } catch (err) {
+        this._sendError(res, 400, err.message);
+      }
     });
 
     // 7. Collections list & creation

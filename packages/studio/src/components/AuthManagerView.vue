@@ -61,7 +61,7 @@
                     <button
                       class="btn-icon-action btn-delete-action"
                       aria-label="注销 API 密钥"
-                      @click="deleteKey(k.id)"
+                      @click="deleteKey(k)"
                     >
                       <Trash2 :size="14" />
                     </button>
@@ -105,7 +105,7 @@
                 <Copy :size="14" />
                 <span>复制密钥</span>
               </button>
-              <button class="btn btn-danger-outline btn-sm" @click="deleteKey(k.id)">
+              <button class="btn btn-danger-outline btn-sm" @click="deleteKey(k)">
                 <Trash2 :size="14" />
                 <span>注销</span>
               </button>
@@ -171,10 +171,18 @@ const copyKey = (token) => {
   });
 };
 
-const deleteKey = async (id) => {
+const deleteKey = async (targetKey) => {
+  const isTargetAdmin = targetKey.role === 'admin';
+  const adminCount = keys.value.filter(k => k.role === 'admin').length;
+
+  if (isTargetAdmin && adminCount <= 1) {
+    showToast('无法注销：系统中至少需要保留一个管理员密钥 (admin)！', 'warning');
+    return;
+  }
+
   const confirmed = await showConfirm({
     title: '注销 API 密钥',
-    message: '确定要注销此 API 密钥吗？注销后使用此密钥的客户端和应用将立即无法再访问数据库！',
+    message: `确定要注销 API 密钥 "${targetKey.name}" 吗？注销后使用此密钥的客户端和应用将立即无法再访问数据库！`,
     confirmText: '确认注销',
     cancelText: '取消',
     type: 'danger'
@@ -182,7 +190,7 @@ const deleteKey = async (id) => {
   if (!confirmed) return;
 
   try {
-    await apiRequest(`/api/auth/keys/${id}`, { method: 'DELETE' });
+    await apiRequest(`/api/auth/keys/${targetKey.id}`, { method: 'DELETE' });
     showToast('API 密钥已注销删除', 'success');
     loadKeys();
   } catch (err) {
