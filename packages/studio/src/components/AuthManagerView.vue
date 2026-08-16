@@ -59,12 +59,20 @@
                       <Copy :size="14" />
                     </button>
                     <button
+                      v-if="k.name !== '管理员密钥'"
                       class="btn-icon-action btn-delete-action"
                       aria-label="注销 API 密钥"
                       @click="deleteKey(k)"
                     >
                       <Trash2 :size="14" />
                     </button>
+                    <span
+                      v-else
+                      class="btn-icon-action btn-protected-action"
+                      title="系统核心管理员密钥受到保护，不可注销删除"
+                    >
+                      <ShieldCheck :size="14" />
+                    </span>
                   </div>
                 </td>
               </tr>
@@ -105,9 +113,22 @@
                 <Copy :size="14" />
                 <span>复制密钥</span>
               </button>
-              <button class="btn btn-danger-outline btn-sm" @click="deleteKey(k)">
+              <button
+                v-if="k.name !== '管理员密钥'"
+                class="btn btn-danger-outline btn-sm"
+                @click="deleteKey(k)"
+              >
                 <Trash2 :size="14" />
                 <span>注销</span>
+              </button>
+              <button
+                v-else
+                class="btn btn-secondary btn-sm"
+                disabled
+                title="系统核心管理员密钥受到保护，不可注销删除"
+              >
+                <ShieldCheck :size="14" />
+                <span>核心保护</span>
               </button>
             </div>
           </article>
@@ -126,7 +147,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { Plus, Copy, Trash2, Key } from 'lucide-vue-next';
+import { Plus, Copy, Trash2, Key, ShieldCheck } from 'lucide-vue-next';
 import { useLiteDB } from '../composables/useLiteDB.js';
 import ViewApiKeyModal from './ViewApiKeyModal.vue';
 
@@ -160,6 +181,11 @@ const copyKey = (token) => {
 };
 
 const deleteKey = async (targetKey) => {
+  if (targetKey.name === '管理员密钥') {
+    showToast('无法注销：系统默认的“管理员密钥”受到保护，不可注销删除！', 'warning');
+    return;
+  }
+
   const isTargetAdmin = targetKey.role === 'admin';
   const adminCount = apiKeys.value.filter(k => k.role === 'admin').length;
 
@@ -280,6 +306,14 @@ onMounted(() => {
   background: var(--color-danger);
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.btn-protected-action {
+  color: var(--color-primary);
+  opacity: 0.65;
+  cursor: not-allowed;
+  background: rgba(2, 132, 199, 0.08);
+  border-color: rgba(2, 132, 199, 0.2);
 }
 
 .table-responsive {

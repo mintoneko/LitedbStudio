@@ -182,9 +182,12 @@ export class LiteDBEngine {
   }
 
   deleteApiKey(id) {
-    const keyRecord = this.adapter.prepare(`SELECT role FROM "_litedb_keys" WHERE id = ?`).get(id);
+    const keyRecord = this.adapter.prepare(`SELECT name, role FROM "_litedb_keys" WHERE id = ?`).get(id);
     if (!keyRecord) {
       return false;
+    }
+    if (keyRecord.name === '管理员密钥') {
+      throw new Error('系统默认的“管理员密钥”受到保护，不可注销删除！');
     }
     const normalizedRole = this._normalizeRole(keyRecord.role);
     if (normalizedRole === 'admin') {
