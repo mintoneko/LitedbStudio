@@ -114,8 +114,21 @@ function getCachedCollections() {
   return [];
 }
 
+function getCachedKeys() {
+  try {
+    const cached = localStorage.getItem('litedb_cached_keys');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch {}
+  return [];
+}
+
 const stats = ref(getCachedStats());
 const collections = ref(getCachedCollections());
+const apiKeys = ref(getCachedKeys());
+const isApiKeysLoading = ref(false);
 const toasts = ref([]);
 
 export function useLiteDB() {
@@ -247,6 +260,9 @@ export function useLiteDB() {
       }
       await refreshStats();
       await refreshCollections();
+      if (currentRole.value === 'admin') {
+        refreshApiKeys();
+      }
       return true;
     } catch (err) {
       isConnected.value = false;
@@ -282,6 +298,28 @@ export function useLiteDB() {
     }
   };
 
+  const refreshApiKeys = async () => {
+    if (currentRole.value !== 'admin') return;
+    isApiKeysLoading.value = true;
+    try {
+      const keys = await apiRequest('/api/auth/keys');
+      apiKeys.value = keys || [];
+      try {
+        localStorage.setItem('litedb_cached_keys', JSON.stringify(keys || []));
+      } catch {}
+    } catch {
+      // ignore
+    } finally {
+      isApiKeysLoading.value = false;
+    }
+  };
+
+  const triggerApiKeyRefresh = () => {
+    apiKeyVersion.value++;
+    refreshApiKeys();
+    refreshStats();
+  };
+
   return {
     theme,
     themeMode,
@@ -301,6 +339,8 @@ export function useLiteDB() {
     confirmState,
     stats,
     collections,
+    apiKeys,
+    isApiKeysLoading,
     toasts,
     showToast,
     showConfirm,
@@ -310,11 +350,12 @@ export function useLiteDB() {
     openCreateApiKey,
     closeCreateApiKey,
     apiKeyVersion,
-    triggerApiKeyRefresh: () => { apiKeyVersion.value++; },
+    triggerApiKeyRefresh,
     setEndpointAndKey,
     apiRequest,
     checkConnection,
     refreshStats,
-    refreshCollections
+    refreshCollections,
+    refreshApiKeys
   };
 }

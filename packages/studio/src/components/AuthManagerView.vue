@@ -25,13 +25,13 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="loading && keys.length === 0">
+              <tr v-if="isApiKeysLoading && apiKeys.length === 0">
                 <td colspan="6" class="text-center py-6 text-muted">加载密钥列表中...</td>
               </tr>
-              <tr v-else-if="keys.length === 0">
+              <tr v-else-if="apiKeys.length === 0">
                 <td colspan="6" class="text-center py-6 text-muted">暂无 API 密钥</td>
               </tr>
-              <tr v-for="k in keys" :key="k.id">
+              <tr v-for="k in apiKeys" :key="k.id">
                 <td><strong>{{ k.name }}</strong></td>
                 <td style="white-space: nowrap;">
                   <button
@@ -73,9 +73,9 @@
         </div>
 
         <div class="mobile-key-list">
-          <div v-if="loading && keys.length === 0" class="mobile-key-state text-muted">加载密钥列表中...</div>
-          <div v-else-if="keys.length === 0" class="mobile-key-state text-muted">暂无 API 密钥</div>
-          <article v-for="k in keys" :key="k.id" class="mobile-key-card">
+          <div v-if="isApiKeysLoading && apiKeys.length === 0" class="mobile-key-state text-muted">加载密钥列表中...</div>
+          <div v-else-if="apiKeys.length === 0" class="mobile-key-state text-muted">暂无 API 密钥</div>
+          <article v-for="k in apiKeys" :key="k.id" class="mobile-key-card">
             <div class="mobile-key-card-header">
               <div class="mobile-key-card-title">
                 <strong>{{ k.name }}</strong>
@@ -125,26 +125,21 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { Plus, Copy, Trash2, Key } from 'lucide-vue-next';
 import { useLiteDB } from '../composables/useLiteDB.js';
 import ViewApiKeyModal from './ViewApiKeyModal.vue';
 
-const { apiRequest, showToast, showConfirm, openCreateApiKey, apiKeyVersion } = useLiteDB();
-
-function getCachedKeys() {
-  try {
-    const cached = localStorage.getItem('litedb_cached_keys');
-    if (cached) {
-      const parsed = JSON.parse(cached);
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch {}
-  return [];
-}
-
-const keys = ref(getCachedKeys());
-const loading = ref(false);
+const {
+  apiRequest,
+  showToast,
+  showConfirm,
+  openCreateApiKey,
+  apiKeys,
+  isApiKeysLoading,
+  refreshApiKeys,
+  triggerApiKeyRefresh
+} = useLiteDB();
 
 const isViewKeyModalOpen = ref(false);
 const viewingKeyData = ref(null);
@@ -154,30 +149,9 @@ const openViewKeyModal = (key) => {
   isViewKeyModalOpen.value = true;
 };
 
-const loadKeys = async (showLoading = false) => {
-  if (showLoading && keys.value.length === 0) {
-    loading.value = true;
-  }
-  try {
-    const res = await apiRequest('/api/auth/keys');
-    keys.value = res || [];
-    try {
-      localStorage.setItem('litedb_cached_keys', JSON.stringify(res || []));
-    } catch {}
-  } catch (err) {
-    showToast(`加载密钥失败: ${err.message}`, 'error');
-  } finally {
-    loading.value = false;
-  }
-};
-
 const promptCreateKey = () => {
   openCreateApiKey();
 };
-
-watch(apiKeyVersion, () => {
-  loadKeys(false);
-});
 
 const copyKey = (token) => {
   navigator.clipboard.writeText(token).then(() => {
@@ -187,7 +161,7 @@ const copyKey = (token) => {
 
 const deleteKey = async (targetKey) => {
   const isTargetAdmin = targetKey.role === 'admin';
-  const adminCount = keys.value.filter(k => k.role === 'admin').length;
+  const adminCount = apiKeys.value.filter(k => k.role === 'admin').length;
 
   if (isTargetAdmin && adminCount <= 1) {
     showToast('无法注销：系统中至少需要保留一个管理员密钥 (admin)！', 'warning');
@@ -206,7 +180,7 @@ const deleteKey = async (targetKey) => {
   try {
     await apiRequest(`/api/auth/keys/${targetKey.id}`, { method: 'DELETE' });
     showToast('API 密钥已注销删除', 'success');
-    loadKeys(false);
+    triggerApiKeyRefresh();
   } catch (err) {
     showToast(`删除失败: ${err.message}`, 'error');
   }
@@ -229,7 +203,7 @@ const formatDate = (isoStr) => {
 };
 
 onMounted(() => {
-  loadKeys(false);
+  refreshApiKeys();
 });
 </script>
 
