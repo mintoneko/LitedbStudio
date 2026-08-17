@@ -1,8 +1,9 @@
 <div align="center">
 
-<img src="packages/studio/public/favicon.svg" alt="LiteDB Studio logo" width="64">
-
-# LiteDB Studio
+<h1>
+  <img src="packages/studio/public/favicon.svg" alt="LiteDB Studio logo" width="42" height="42" valign="middle">
+  LiteDB Studio
+</h1>
 
 面向前端、轻量全栈和桌面应用的 SQLite JSON 文档数据库。
 
@@ -35,11 +36,24 @@ LiteDB Studio 将 SQLite 文件、JSON 文档模型、Node.js REST 服务、统�
 
 LiteDB 的定位是单机、单实例的轻量数据层。当前版本不提供集群、复制、实时订阅、自动 Schema 校验或迁移系统。
 
+### 适用边界与并发
+
+这套方案对中小规模单实例够用，但不是“什么场景都完美”的数据库。
+
+| 场景 | 结论 |
+| --- | --- |
+| 个人项目、内部工具、中小后台 | 适合。单文件 + WAL，部署简单。 |
+| 中小并发、读多写少 | 可以坚持。单进程内请求串行访问 SQLite，WAL 适合读多写少。 |
+| 多进程 / 多机同时写同一个库文件 | 不适合作为主方案。可能出现锁等待或 `SQLITE_BUSY`。 |
+| 需要集群、复制、水平扩展 | 超出定位，应换用独立数据库服务。 |
+
+单进程部署时，简单 CRUD 通常能稳定支撑几十到一两百 QPS 量级的中小流量。写入走 `BEGIN IMMEDIATE`，并设置了 `busy_timeout`，短时争用会等待而不是立刻失败。若流量继续上涨，应拆分写入、加缓存，或迁移到专用数据库。
+
 ## 核心能力
 
 | 能力 | 说明 |
 | --- | --- |
-| SQLite 存储 | 单文件持久化，默认启用 WAL、外键、缓存和内存临时表。 |
+| SQLite 存储 | 单文件持久化，默认启用 WAL、外键、`busy_timeout`、缓存和内存临时表。 |
 | JSON 文档 | 自定义字段存储在 JSON 数据列，每条记录自动带有 `id`、`created_at`、`updated_at`。 |
 | 双运行模式 | `@litedb/client` 支持 HTTP 和 embedded，两种模式共用集合 API。 |
 | 查询与分页 | 支持比较、集合、模糊匹配、逻辑组合、排序、字段选择、`limit/skip` 和分页。 |

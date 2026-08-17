@@ -52,8 +52,10 @@ export class SQLiteAdapter {
       this.exec('PRAGMA journal_mode = WAL;');
       this.exec('PRAGMA foreign_keys = ON;');
       this.exec('PRAGMA synchronous = NORMAL;');
+      this.exec('PRAGMA busy_timeout = 5000;');
       this.exec('PRAGMA cache_size = -64000;');
       this.exec('PRAGMA temp_store = MEMORY;');
+      this.exec('PRAGMA wal_autocheckpoint = 1000;');
     } catch {
       // Ignore pragmas if memory or unsupported
     }
